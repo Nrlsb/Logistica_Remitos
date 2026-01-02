@@ -22,6 +22,11 @@ const RemitoForm = () => {
         type: 'info'
     });
 
+    // Clarification State
+    const [showClarificationModal, setShowClarificationModal] = useState(false);
+    const [clarificationText, setClarificationText] = useState('');
+    const [pendingDiscrepancies, setPendingDiscrepancies] = useState(null);
+
     const triggerModal = (title, message, type = 'info') => {
         setModalConfig({
             isOpen: true,
@@ -116,52 +121,76 @@ const RemitoForm = () => {
     };
 
     const handleSubmitRemito = async () => {
+        // Calculate Discrepancies
+        let discrepancies = { missing: [], extra: [] };
+
+        if (expectedItems) {
+            // Find Missing Items (Expected but not in scanned items or quantity mismatch)
+            expectedItems.forEach(expected => {
+                const scanned = items.find(i => i.code === expected.barcode);
+                const scannedQty = scanned ? scanned.quantity : 0;
+
+                if (scannedQty < expected.quantity) {
+                    discrepancies.missing.push({
+                        code: expected.barcode,
+                        description: expected.description,
+                        expected: expected.quantity,
+                        scanned: scannedQty
+                    });
+                }
+            });
+
+            // Find Extra Items (Scanned but not in expected items OR quantity exceeds expected)
+            items.forEach(scanned => {
+                const expected = expectedItems.find(i => i.barcode === scanned.code);
+
+                if (!expected) {
+                    // Completely unexpected item
+                    discrepancies.extra.push({
+                        code: scanned.code,
+                        description: scanned.name,
+                        quantity: scanned.quantity
+                    });
+                } else if (scanned.quantity > expected.quantity) {
+                    // Expected item but with excess quantity
+                    discrepancies.extra.push({
+                        code: scanned.code,
+                        description: scanned.name,
+                        quantity: scanned.quantity - expected.quantity
+                    });
+                }
+            });
+        }
+
+        // Check if there are discrepancies
+        if (discrepancies.missing.length > 0 || discrepancies.extra.length > 0) {
+            setPendingDiscrepancies(discrepancies);
+            setShowClarificationModal(true);
+            return;
+        }
+
+        // No discrepancies, submit directly
+        await submitRemitoData(discrepancies, null);
+    };
+
+    const handleConfirmClarification = async () => {
+        if (!clarificationText.trim()) {
+            triggerModal('Atención', 'Debe ingresar una aclaración para las diferencias encontradas.', 'warning');
+            return;
+        }
+        await submitRemitoData(pendingDiscrepancies, clarificationText);
+        setShowClarificationModal(false);
+        setClarificationText('');
+        setPendingDiscrepancies(null);
+    };
+
+    const submitRemitoData = async (discrepancies, clarification) => {
         try {
-            // Calculate Discrepancies
-            let discrepancies = { missing: [], extra: [] };
-
-            if (expectedItems) {
-                // Find Missing Items (Expected but not in scanned items or quantity mismatch)
-                expectedItems.forEach(expected => {
-                    const scanned = items.find(i => i.code === expected.barcode);
-                    const scannedQty = scanned ? scanned.quantity : 0;
-
-                    if (scannedQty < expected.quantity) {
-                        discrepancies.missing.push({
-                            code: expected.barcode,
-                            description: expected.description,
-                            expected: expected.quantity,
-                            scanned: scannedQty
-                        });
-                    }
-                });
-
-                // Find Extra Items (Scanned but not in expected items OR quantity exceeds expected)
-                items.forEach(scanned => {
-                    const expected = expectedItems.find(i => i.barcode === scanned.code);
-
-                    if (!expected) {
-                        // Completely unexpected item
-                        discrepancies.extra.push({
-                            code: scanned.code,
-                            description: scanned.name,
-                            quantity: scanned.quantity
-                        });
-                    } else if (scanned.quantity > expected.quantity) {
-                        // Expected item but with excess quantity
-                        discrepancies.extra.push({
-                            code: scanned.code,
-                            description: scanned.name,
-                            quantity: scanned.quantity - expected.quantity
-                        });
-                    }
-                });
-            }
-
             const response = await api.post('/api/remitos', {
                 remitoNumber,
                 items,
-                discrepancies
+                discrepancies,
+                clarification
             });
 
             console.log('Remito submitted:', response.data);
@@ -294,6 +323,68 @@ const RemitoForm = () => {
                 message={modalConfig.message}
                 type={modalConfig.type}
             />
+
+            {/* Clarification Modal */}
+            {showClarificationModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+                        <div className="px-6 py-4 border-b bg-yellow-50 border-yellow-100">
+                            <h3 className="text-lg font-bold text-yellow-800 flex items-center">
+                                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Diferencias Encontradas
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-700 mb-4">
+                                Se han detectado diferencias entre el pedido y lo escaneado. Por favor, ingrese una aclaración para continuar.
+                            </p>
+
+                            {pendingDiscrepancies && (
+                                <div className="mb-4 bg-gray-50 p-3 rounded-lg text-sm">
+                                    {pendingDiscrepancies.missing.length > 0 && (
+                                        <div className="mb-2">
+                                            <span className="font-bold text-red-600">Faltantes:</span> {pendingDiscrepancies.missing.length} items
+                                        </div>
+                                    )}
+                                    {pendingDiscrepancies.extra.length > 0 && (
+                                        <div>
+                                            <span className="font-bold text-orange-600">Sobrantes:</span> {pendingDiscrepancies.extra.length} items
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Aclaración / Motivo
+                            </label>
+                            <textarea
+                                value={clarificationText}
+                                onChange={(e) => setClarificationText(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 min-h-[100px]"
+                                placeholder="Ej: Mercadería no llegó, error en remito, etc."
+                            />
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowClarificationModal(false);
+                                    setClarificationText('');
+                                    setPendingDiscrepancies(null);
+                                }}
+                                className="px-4 py-2 text-gray-700 font-semibold hover:bg-gray-100 rounded-lg transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmClarification}
+                                className="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition"
+                            >
+                                Confirmar y Finalizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 border-b border-gray-100 pb-4 gap-2">
                 <h2 className="text-2xl md:text-3xl font-bold text-brand-dark tracking-tight">Nuevo Remito</h2>

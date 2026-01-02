@@ -102,7 +102,7 @@ app.get('/api/products/:barcode', verifyToken, async (req, res) => {
 
 // Create new remito
 app.post('/api/remitos', verifyToken, async (req, res) => {
-    const { remitoNumber, items, discrepancies } = req.body;
+    const { remitoNumber, items, discrepancies, clarification } = req.body;
 
     if (!remitoNumber || !items || items.length === 0) {
         return res.status(400).json({ message: 'Missing remito number or items' });
@@ -116,6 +116,7 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
                     remito_number: remitoNumber,
                     items: items,
                     discrepancies: discrepancies || {}, // Save discrepancies if provided
+                    clarification: clarification || null,
                     status: 'processed', // Assuming auto-processed for now
                     created_by: req.user.username // Save the username from the token
                 }
