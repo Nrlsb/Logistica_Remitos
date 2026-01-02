@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -6,24 +7,25 @@ const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
+    // const [error, setError] = useState('');
     const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        // setError('');
 
         if (password !== confirmPassword) {
-            setError('Las contraseñas no coinciden');
+            toast.error('Las contraseñas no coinciden');
             return;
         }
 
         const result = await register(username, password);
         if (result.success) {
+            toast.success('Registro exitoso! Por favor inicia sesión.');
             navigate('/');
         } else {
-            setError(result.message);
+            toast.error(result.message);
         }
     };
 
@@ -38,12 +40,7 @@ const Register = () => {
                     <p className="text-brand-gray mt-2">Únete al equipo de control</p>
                 </div>
 
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-brand-alert p-4 mb-6 rounded-r-lg flex items-start">
-                        <svg className="w-5 h-5 text-brand-alert mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                )}
+                {/* Error handling moved to Toast */}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>

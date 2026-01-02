@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'sonner';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import RemitoForm from './components/RemitoForm';
 import RemitoList from './components/RemitoList';
@@ -24,6 +25,7 @@ const AppContent = () => {
 
   return (
     <>
+      <Toaster richColors position="top-center" />
       <Modal
         isOpen={sessionExpired}
         onClose={closeSessionExpiredModal}
