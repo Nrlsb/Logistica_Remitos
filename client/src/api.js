@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: '/' // Relative path since we are proxying or serving from same origin
+    baseURL: import.meta.env.VITE_API_URL || '/'
 });
 
 api.interceptors.request.use(
