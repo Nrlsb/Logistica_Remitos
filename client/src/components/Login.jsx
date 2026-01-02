@@ -24,8 +24,8 @@ const Login = () => {
         <div className="min-h-screen flex items-center justify-center bg-brand-bg p-4">
             <div className="bg-white p-10 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
                 <div className="text-center mb-8">
-                    <div className="mx-auto h-12 w-12 bg-brand-blue rounded-lg flex items-center justify-center mb-4 shadow-lg transform rotate-3">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div className="mx-auto h-24 w-24 flex items-center justify-center mb-4">
+                        <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <h2 className="text-3xl font-bold text-brand-dark tracking-tight">Bienvenido</h2>
                     <p className="text-brand-gray mt-2">Ingresa tus credenciales para continuar</p>
