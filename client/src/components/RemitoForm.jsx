@@ -57,7 +57,7 @@ const RemitoForm = () => {
         setPreRemitoStatus('loading');
         try {
             const response = await api.get(`/api/pre-remitos/${preRemitoNumber}`);
-            setExpectedItems(response.data.items);
+            setExpectedItems(response.data.items); // items now contain { code, barcode, quantity, description } from DB
             setPreRemitoStatus('found');
             // Auto-fill remito number if desired, or keep separate
         } catch (error) {
@@ -82,8 +82,11 @@ const RemitoForm = () => {
                 }
             });
 
+            // Mapped items from PDF upload (which might not have barcodes yet, unless backend updated)
+            // But we ensure structure is consistent
             const mappedItems = response.data.items.map(item => ({
-                barcode: item.code,
+                code: item.code,
+                barcode: item.barcode || item.code, // Fallback if no barcode
                 quantity: item.quantity,
                 description: item.description
             }));
@@ -127,12 +130,12 @@ const RemitoForm = () => {
         if (expectedItems) {
             // Find Missing Items (Expected but not in scanned items or quantity mismatch)
             expectedItems.forEach(expected => {
-                const scanned = items.find(i => i.code === expected.barcode);
+                const scanned = items.find(i => i.code === expected.code);
                 const scannedQty = scanned ? scanned.quantity : 0;
 
                 if (scannedQty < expected.quantity) {
                     discrepancies.missing.push({
-                        code: expected.barcode,
+                        code: expected.code,
                         description: expected.description,
                         expected: expected.quantity,
                         scanned: scannedQty
@@ -142,7 +145,7 @@ const RemitoForm = () => {
 
             // Find Extra Items (Scanned but not in expected items OR quantity exceeds expected)
             items.forEach(scanned => {
-                const expected = expectedItems.find(i => i.barcode === scanned.code);
+                const expected = expectedItems.find(i => i.code === scanned.code);
 
                 if (!expected) {
                     // Completely unexpected item
@@ -209,7 +212,7 @@ const RemitoForm = () => {
     };
 
     // Handle barcode scan (from camera or physical scanner)
-    const handleScan = React.useCallback((code) => {
+    const handleScan = React.useCallback((inputCode) => {
         const currentItems = itemsRef.current;
         const currentExpectedItems = expectedItemsRef.current;
 
@@ -217,33 +220,27 @@ const RemitoForm = () => {
         let validationMessage = null;
         let isValid = true;
 
+        let targetCode = inputCode; // Default to input, will be resolved
+        let productName = 'Unknown Product';
+        let foundDetails = null;
+
         if (currentExpectedItems) {
-            const expectedItem = currentExpectedItems.find(item => item.barcode === code);
+            // Try to find by barcode OR code
+            const expectedItem = currentExpectedItems.find(item => item.barcode === inputCode || item.code === inputCode);
+
             if (!expectedItem) {
                 isValid = false;
                 validationMessage = 'Producto no pertenece al pedido';
-                // We cannot trigger modal here easily because it might interrupt scanning flow too much?
-                // Or maybe we DO want to interrupt?
-                // Since user asked for modals instead of alerts, let's use it.
-                // BUT, we need to be careful about "this" context or closures if we used triggerModal directly.
-                // Since triggerModal is state setter, it's stable? No, it depends on closure?
-                // Actually, setModalConfig is stable. But triggerModal isn't if defined inside component.
-                // However, we are inside useCallback. We shouldn't call external functions that change often.
-                // Let's dispatch a custom event or use a ref for the trigger function?
-                // Or just ignore the lint warning?
-                // Better: Just set the validation message on the item.
-                // The ALERT was: alert(`ALERTA: ${validationMessage}`);
-
-                // If we want to show a modal, we need to call a function.
-                // Let's assume we can call it. We might need to add it to deps or use a ref.
-                // For simplicity, I will NOT show a modal for every scan error to avoid spamming,
-                // UNLESS it's a critical error. The user saw alerts before.
-                // Let's try to emit a custom event or just use console.warn for now?
-                // NO, the user WANTS modals.
-                // I will use a Ref to hold the triggerModal function to call it safely from useCallback.
+                // If not in expected, we might still want to add it (with warning) via API lookup below?
+                // But simplified logic: assume unexpected
             } else {
+                // Found in expected! Use strict internal code
+                targetCode = expectedItem.code;
+                productName = expectedItem.description;
+                foundDetails = expectedItem;
+
                 // Check quantity
-                const currentQty = currentItems.find(i => i.code === code)?.quantity || 0;
+                const currentQty = currentItems.find(i => i.code === targetCode)?.quantity || 0;
                 if (currentQty + 1 > expectedItem.quantity) {
                     isValid = false;
                     validationMessage = 'Excede cantidad solicitada';
@@ -252,39 +249,78 @@ const RemitoForm = () => {
         }
 
         // We need to trigger modal if there is a validation message that warrants it.
-        // The previous code did `alert`.
-        // To call triggerModal from here without adding it to deps (which would break stability),
-        // we can use a ref.
-
         if (validationMessage) {
             window.dispatchEvent(new CustomEvent('scan-error', { detail: validationMessage }));
         }
 
-        const existingItem = currentItems.find(item => item.code === code);
-        if (existingItem) {
-            setItems(prevItems => prevItems.map(item =>
-                item.code === code ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
-            ));
+        // Processing Logic
+        // If we found the item in expected list, we have the targetCode (internal code).
+        // If not found, we need to decide what `targetCode` is.
+        // If scan was barcode, we should probably fetch from API to get the Code.
+
+        if (foundDetails) {
+            // It was in our expected list
+            const existingItem = currentItems.find(item => item.code === targetCode);
+            if (existingItem) {
+                setItems(prevItems => prevItems.map(item =>
+                    item.code === targetCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
+                ));
+            } else {
+                setItems(prevItems => [...prevItems, {
+                    code: targetCode,
+                    name: productName,
+                    quantity: 1,
+                    validationError: validationMessage
+                }]);
+            }
         } else {
-            // Fetch product details from backend
-            api.get(`/api/products/${code}`)
+            // Not in expected list. We need to fetch it to get the real code if possible.
+            // Or if validation failed (not not in order), we might still want to add it to show "Not requested".
+            // Let's fetch from API to resolve barcode -> code
+
+            // Check if we already have it scanned
+            // We don't know the code yet if input was barcode.
+
+            api.get(`/api/products/${inputCode}`)
                 .then(response => {
                     const product = response.data;
-                    setItems(prevItems => [...prevItems, {
-                        code,
-                        name: product.description || 'Unknown Product',
-                        quantity: 1,
-                        validationError: validationMessage
-                    }]);
+                    const resolvedCode = product.code || inputCode; // Use internal code from API
+                    const resolvedName = product.description || 'Unknown Product';
+
+                    setItems(prevItems => {
+                        const existing = prevItems.find(i => i.code === resolvedCode);
+                        if (existing) {
+                            return prevItems.map(item =>
+                                item.code === resolvedCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
+                            );
+                        } else {
+                            return [...prevItems, {
+                                code: resolvedCode,
+                                name: resolvedName,
+                                quantity: 1,
+                                validationError: validationMessage
+                            }];
+                        }
+                    });
                 })
                 .catch(error => {
                     console.error('Error fetching product:', error);
-                    setItems(prevItems => [...prevItems, {
-                        code,
-                        name: 'Unknown Product',
-                        quantity: 1,
-                        validationError: validationMessage
-                    }]);
+                    // Add as raw code if API fails
+                    setItems(prevItems => {
+                        const existing = prevItems.find(i => i.code === inputCode);
+                        if (existing) {
+                            return prevItems.map(item =>
+                                item.code === inputCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
+                            )
+                        } else {
+                            return [...prevItems, {
+                                code: inputCode,
+                                name: 'Unknown Product',
+                                quantity: 1,
+                                validationError: validationMessage
+                            }]
+                        }
+                    });
                 });
         }
     }, []); // Empty dependency array
@@ -310,7 +346,8 @@ const RemitoForm = () => {
     // Helper to get expected quantity
     const getExpectedQty = (code) => {
         if (!expectedItems) return null;
-        const item = expectedItems.find(i => i.barcode === code);
+        // Match by code (internal)
+        const item = expectedItems.find(i => i.code === code);
         return item ? item.quantity : 0;
     };
 
