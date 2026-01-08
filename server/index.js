@@ -237,14 +237,14 @@ app.post('/api/remitos/upload-pdf', verifyToken, multer({ storage: multer.memory
         // Enrich items with barcodes from DB
         const enrichedItems = [];
         for (const item of extractedItems) {
-            const internalCode = item.code;
+            const internalCode = String(item.code).trim();
 
             // Lookup product by internal code
             const { data: product } = await supabase
                 .from('products')
                 .select('barcode, description')
                 .eq('code', internalCode)
-                .single();
+                .maybeSingle(); // Use maybeSingle to avoid error if 0 rows (though unlikely with checking)
 
             if (product && product.barcode) {
                 enrichedItems.push({

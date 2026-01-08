@@ -212,7 +212,8 @@ const RemitoForm = () => {
     };
 
     // Handle barcode scan (from camera or physical scanner)
-    const handleScan = React.useCallback((inputCode) => {
+    const handleScan = React.useCallback((rawCode) => {
+        const inputCode = rawCode.trim(); // Trim whitespace/newlines
         const currentItems = itemsRef.current;
         const currentExpectedItems = expectedItemsRef.current;
 
@@ -348,7 +349,7 @@ const RemitoForm = () => {
         if (!expectedItems) return null;
         // Match by code (internal)
         const item = expectedItems.find(i => i.code === code);
-        return item ? item.quantity : 0;
+        return item ? item.quantity : null; // Return null if not found
     };
 
     return (
