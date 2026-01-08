@@ -224,6 +224,7 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
 });
 
 // Upload PDF Remito
+// Upload PDF Remito
 app.post('/api/remitos/upload-pdf', verifyToken, multer({ storage: multer.memoryStorage() }).single('file'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -231,8 +232,38 @@ app.post('/api/remitos/upload-pdf', verifyToken, multer({ storage: multer.memory
 
     try {
         console.log(`Received PDF upload. Size: ${req.file.size} bytes`);
-        const items = await parseRemitoPdf(req.file.buffer);
-        res.json({ items });
+        const extractedItems = await parseRemitoPdf(req.file.buffer);
+
+        // Enrich items with barcodes from DB
+        const enrichedItems = [];
+        for (const item of extractedItems) {
+            const internalCode = item.code;
+
+            // Lookup product by internal code
+            const { data: product } = await supabase
+                .from('products')
+                .select('barcode, description')
+                .eq('code', internalCode)
+                .single();
+
+            if (product && product.barcode) {
+                enrichedItems.push({
+                    code: internalCode,
+                    barcode: product.barcode,
+                    quantity: item.quantity,
+                    description: product.description || item.description
+                });
+            } else {
+                enrichedItems.push({
+                    code: internalCode,
+                    barcode: null, // Frontend will fallback to code
+                    quantity: item.quantity,
+                    description: item.description
+                });
+            }
+        }
+
+        res.json({ items: enrichedItems });
     } catch (error) {
         console.error('Error processing PDF:', error);
         res.status(500).json({ message: 'Error processing PDF' });
