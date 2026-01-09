@@ -10,6 +10,9 @@ const DiscrepancyList = () => {
         fetchRemitos();
     }, []);
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('all'); // 'all', 'missing', 'extra'
+
     const fetchRemitos = async () => {
         try {
             const response = await api.get('/api/remitos');
@@ -34,6 +37,28 @@ const DiscrepancyList = () => {
         return [...missing, ...extra];
     };
 
+    const filteredRemitos = remitos.reduce((acc, remito) => {
+        const allItems = getCombinedDiscrepancies(remito);
+        const filteredItems = allItems.filter(item => {
+            const term = searchTerm.toLowerCase();
+            const matchesSearch =
+                (item.description?.toLowerCase() || '').includes(term) ||
+                (item.code || '').includes(term) ||
+                (remito.remito_number?.toString() || '').includes(term);
+
+            const matchesFilter =
+                filterType === 'all' ||
+                item.type === filterType;
+
+            return matchesSearch && matchesFilter;
+        });
+
+        if (filteredItems.length > 0) {
+            acc.push({ ...remito, filteredItems });
+        }
+        return acc;
+    }, []);
+
     if (loading) return <div className="text-center mt-8">Cargando discrepancias...</div>;
     if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
 
@@ -41,14 +66,49 @@ const DiscrepancyList = () => {
         <div className="container mx-auto p-4">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Registro de Discrepancias</h2>
 
-            {remitos.length === 0 ? (
+            {/* Search and Filter Controls */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                    <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            id="search"
+                            className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md p-2 border"
+                            placeholder="Buscar por remito, código o descripción..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div className="w-full md:w-64">
+                    <label htmlFor="filter" className="block text-sm font-medium text-gray-700 mb-1">Filtrar por tipo</label>
+                    <select
+                        id="filter"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                    >
+                        <option value="all">Todos los registros</option>
+                        <option value="missing">Solo Faltantes</option>
+                        <option value="extra">Solo Sobrantes</option>
+                    </select>
+                </div>
+            </div>
+
+            {filteredRemitos.length === 0 ? (
                 <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
                     No se encontraron remitos con discrepancias.
                 </div>
             ) : (
                 <div className="space-y-8">
-                    {remitos.map((remito) => {
-                        const items = getCombinedDiscrepancies(remito);
+                    {filteredRemitos.map((remito) => {
+                        const items = remito.filteredItems;
                         return (
                             <div key={remito.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
                                 <div className="bg-navy-900 p-4 border-b border-gray-200 flex justify-between items-center bg-white">
