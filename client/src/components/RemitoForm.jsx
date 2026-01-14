@@ -767,7 +767,7 @@ const RemitoForm = () => {
                                                 </div>
                                                 <p className="text-sm text-brand-gray font-mono tracking-wide">{item.code}</p>
                                                 {isUnexpected && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ No solicitado</p>}
-                                                {isOverQty && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ Excede cantidad ({expectedQty})</p>}
+                                                {isOverQty && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ Excede cantidad</p>}
                                             </div>
 
                                             <div className="flex items-center justify-between w-full sm:w-auto gap-6">
