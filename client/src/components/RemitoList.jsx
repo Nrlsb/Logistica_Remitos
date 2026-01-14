@@ -447,7 +447,14 @@ const RemitoList = () => {
                                                                             </div>
                                                                             <div className="flex-1 min-w-0 mr-3">
                                                                                 <span className="text-gray-900 font-medium text-sm block line-clamp-2 leading-snug mb-1">{item.description || item.code}</span>
-                                                                                <span className="text-xs text-gray-500 font-mono block">{item.code}</span>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-xs text-gray-500 font-mono block">{item.code}</span>
+                                                                                    {item.reason && (
+                                                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${item.reason === 'no_stock' ? 'bg-gray-200 text-gray-700' : 'bg-red-200 text-red-800'}`}>
+                                                                                            {item.reason === 'no_stock' ? 'Sin Stock' : 'Dañado'}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                             <div className="flex flex-col items-center justify-center">
                                                                                 <div className="h-10 w-10 rounded-full bg-white border-2 border-red-100 flex items-center justify-center shadow-sm">

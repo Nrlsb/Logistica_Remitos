@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Scanner from './Scanner';
 import Modal from './Modal';
+import FichajeModal from './FichajeModal';
 import api from '../api';
 
 const RemitoForm = () => {
@@ -11,6 +12,7 @@ const RemitoForm = () => {
 
     // Pre-remito state
     const [preRemitoNumber, setPreRemitoNumber] = useState('');
+    const [preRemitoList, setPreRemitoList] = useState([]);
     const [expectedItems, setExpectedItems] = useState(null); // null = no pre-remito loaded
     const [preRemitoStatus, setPreRemitoStatus] = useState(''); // 'loading', 'found', 'not_found', 'error'
 
@@ -25,7 +27,17 @@ const RemitoForm = () => {
     // Clarification State
     const [showClarificationModal, setShowClarificationModal] = useState(false);
     const [clarificationText, setClarificationText] = useState('');
+    const [missingReasons, setMissingReasons] = useState({}); // { code: 'damaged' | 'no_stock' }
+    const [missingExpanded, setMissingExpanded] = useState(false);
     const [pendingDiscrepancies, setPendingDiscrepancies] = useState(null);
+
+    // Fichaje Modal State
+    const [fichajeState, setFichajeState] = useState({
+        isOpen: false,
+        product: null,
+        existingQuantity: 0,
+        expectedQuantity: null
+    });
 
     const triggerModal = (title, message, type = 'info') => {
         setModalConfig({
@@ -52,6 +64,25 @@ const RemitoForm = () => {
         expectedItemsRef.current = expectedItems;
     }, [expectedItems]);
 
+    // Fetch pre-remitos list on mount
+    useEffect(() => {
+        const fetchPreRemitos = async () => {
+            try {
+                const response = await api.get('/api/pre-remitos');
+                if (Array.isArray(response.data)) {
+                    setPreRemitoList(response.data);
+                } else {
+                    console.error('Invalid pre-remitos data format:', response.data);
+                    setPreRemitoList([]);
+                }
+            } catch (error) {
+                console.error('Error fetching pre-remitos list:', error);
+                setPreRemitoList([]);
+            }
+        };
+        fetchPreRemitos();
+    }, []);
+
     const handleLoadPreRemito = async () => {
         if (!preRemitoNumber) return;
         setPreRemitoStatus('loading');
@@ -59,7 +90,8 @@ const RemitoForm = () => {
             const response = await api.get(`/api/pre-remitos/${preRemitoNumber}`);
             setExpectedItems(response.data.items); // items now contain { code, barcode, quantity, description } from DB
             setPreRemitoStatus('found');
-            // Auto-fill remito number if desired, or keep separate
+            // Auto-fill remito number with the order number
+            setRemitoNumber(preRemitoNumber);
         } catch (error) {
             console.error('Error loading pre-remito:', error);
             setPreRemitoStatus('not_found');
@@ -177,13 +209,31 @@ const RemitoForm = () => {
     };
 
     const handleConfirmClarification = async () => {
-        if (!clarificationText.trim()) {
-            triggerModal('Atención', 'Debe ingresar una aclaración para las diferencias encontradas.', 'warning');
-            return;
+        // Validation: Ensure all missing items have a reason
+        if (pendingDiscrepancies?.missing?.length > 0) {
+            const missingCodes = pendingDiscrepancies.missing.map(i => i.code);
+            const allHaveReason = missingCodes.every(code => missingReasons[code]);
+
+            if (!allHaveReason) {
+                triggerModal('Atención', 'Debe seleccionar un motivo para cada producto faltante.', 'warning');
+                return;
+            }
         }
-        await submitRemitoData(pendingDiscrepancies, clarificationText);
+
+        // Enrich discrepancies with reasons
+        const enrichedDiscrepancies = {
+            ...pendingDiscrepancies,
+            missing: pendingDiscrepancies.missing.map(item => ({
+                ...item,
+                reason: missingReasons[item.code]
+            }))
+        };
+
+        await submitRemitoData(enrichedDiscrepancies, clarificationText);
         setShowClarificationModal(false);
         setClarificationText('');
+        setMissingReasons({});
+        setMissingExpanded(false);
         setPendingDiscrepancies(null);
     };
 
@@ -217,114 +267,113 @@ const RemitoForm = () => {
         const currentItems = itemsRef.current;
         const currentExpectedItems = expectedItemsRef.current;
 
-        // Validation Logic
-        let validationMessage = null;
-        let isValid = true;
+        // 1. Resolve Product Details (from Expected or API)
+        let resolvedProduct = null;
+        let expectedQty = null;
 
-        let targetCode = inputCode; // Default to input, will be resolved
-        let productName = 'Unknown Product';
-        let foundDetails = null;
-
+        // Check in expected items first
         if (currentExpectedItems) {
             // Try to find by barcode OR code
             const expectedItem = currentExpectedItems.find(item => item.barcode === inputCode || item.code === inputCode);
 
             if (!expectedItem) {
-                isValid = false;
-                validationMessage = 'Producto no pertenece al pedido';
-                // If not in expected, we might still want to add it (with warning) via API lookup below?
-                // But simplified logic: assume unexpected
+                // STRICT MODE: Block unexpected items
+                triggerModal('Error', 'Este producto no pertenece al pedido cargado.', 'error');
+                return;
             } else {
-                // Found in expected! Use strict internal code
-                targetCode = expectedItem.code;
-                productName = expectedItem.description;
-                foundDetails = expectedItem;
-
-                // Check quantity
-                const currentQty = currentItems.find(i => i.code === targetCode)?.quantity || 0;
-                if (currentQty + 1 > expectedItem.quantity) {
-                    isValid = false;
-                    validationMessage = 'Excede cantidad solicitada';
-                }
+                resolvedProduct = {
+                    code: expectedItem.code,
+                    name: expectedItem.description,
+                    barcode: expectedItem.barcode
+                };
+                expectedQty = expectedItem.quantity;
             }
         }
 
-        // We need to trigger modal if there is a validation message that warrants it.
-        if (validationMessage) {
-            window.dispatchEvent(new CustomEvent('scan-error', { detail: validationMessage }));
-        }
+        const openFichajeModal = (product, expQty) => {
+            // Find current quantity in scanned items
+            const existingItem = currentItems.find(i => i.code === product.code);
+            const currentQty = existingItem ? existingItem.quantity : 0;
 
-        // Processing Logic
-        // If we found the item in expected list, we have the targetCode (internal code).
-        // If not found, we need to decide what `targetCode` is.
-        // If scan was barcode, we should probably fetch from API to get the Code.
+            setFichajeState({
+                isOpen: true,
+                product: product,
+                existingQuantity: currentQty,
+                expectedQuantity: expQty
+            });
+        };
 
-        if (foundDetails) {
-            // It was in our expected list
-            const existingItem = currentItems.find(item => item.code === targetCode);
-            if (existingItem) {
-                setItems(prevItems => prevItems.map(item =>
-                    item.code === targetCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
-                ));
-            } else {
-                setItems(prevItems => [...prevItems, {
-                    code: targetCode,
-                    name: productName,
-                    quantity: 1,
-                    validationError: validationMessage
-                }]);
-            }
+        if (resolvedProduct) {
+            openFichajeModal(resolvedProduct, expectedQty);
         } else {
-            // Not in expected list. We need to fetch it to get the real code if possible.
-            // Or if validation failed (not not in order), we might still want to add it to show "Not requested".
-            // Let's fetch from API to resolve barcode -> code
-
-            // Check if we already have it scanned
-            // We don't know the code yet if input was barcode.
-
+            // Not in expected list (or no expected list). Fetch from API.
             api.get(`/api/products/${inputCode}`)
                 .then(response => {
-                    const product = response.data;
-                    const resolvedCode = product.code || inputCode; // Use internal code from API
-                    const resolvedName = product.description || 'Unknown Product';
-
-                    setItems(prevItems => {
-                        const existing = prevItems.find(i => i.code === resolvedCode);
-                        if (existing) {
-                            return prevItems.map(item =>
-                                item.code === resolvedCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
-                            );
-                        } else {
-                            return [...prevItems, {
-                                code: resolvedCode,
-                                name: resolvedName,
-                                quantity: 1,
-                                validationError: validationMessage
-                            }];
-                        }
-                    });
+                    const productData = response.data;
+                    const product = {
+                        code: productData.code || inputCode,
+                        name: productData.description || 'Producto Desconocido',
+                        barcode: inputCode
+                    };
+                    openFichajeModal(product, null); // No expected qty for unexpected items
                 })
                 .catch(error => {
                     console.error('Error fetching product:', error);
-                    // Add as raw code if API fails
-                    setItems(prevItems => {
-                        const existing = prevItems.find(i => i.code === inputCode);
-                        if (existing) {
-                            return prevItems.map(item =>
-                                item.code === inputCode ? { ...item, quantity: item.quantity + 1, validationError: validationMessage } : item
-                            )
-                        } else {
-                            return [...prevItems, {
-                                code: inputCode,
-                                name: 'Unknown Product',
-                                quantity: 1,
-                                validationError: validationMessage
-                            }]
-                        }
-                    });
+                    // Fallback for completely unknown item
+                    const product = {
+                        code: inputCode,
+                        name: 'Producto Desconocido',
+                        barcode: inputCode
+                    };
+                    openFichajeModal(product, null);
                 });
         }
-    }, []); // Empty dependency array
+    }, []); // Empty dependency array as we use refs/setters
+
+    const handleFichajeConfirm = (quantityToAdd) => {
+        const { product, expectedQuantity } = fichajeState;
+        if (!product) return;
+
+        setItems(prevItems => {
+            const existingItem = prevItems.find(i => i.code === product.code);
+            let newItemState;
+
+            // Validate against expected
+            let validationMessage = null;
+            const newTotal = (existingItem ? existingItem.quantity : 0) + quantityToAdd;
+
+            if (expectedQuantity !== null && newTotal > expectedQuantity) {
+                validationMessage = 'Excede cantidad solicitada';
+                // We show a toast/notification? Standard logic adds it with red border.
+            }
+
+            if (existingItem) {
+                return prevItems.map(item =>
+                    item.code === product.code
+                        ? { ...item, quantity: newTotal, validationError: validationMessage }
+                        : item
+                );
+            } else {
+                return [...prevItems, {
+                    code: product.code,
+                    name: product.name,
+                    quantity: quantityToAdd,
+                    validationError: validationMessage
+                }];
+            }
+        });
+
+        // Close modal
+        setFichajeState(prev => ({ ...prev, isOpen: false, product: null }));
+
+        // Optional: Trigger success sound or visual feedback
+        if (expectedQuantity !== null && expectedQuantity !== undefined) {
+            const currentQty = (items.find(i => i.code === product.code)?.quantity || 0);
+            if (currentQty + quantityToAdd > expectedQuantity) {
+                triggerModal('Advertencia', `Se ha superado la cantidad solicitada para ${product.name}`, 'warning');
+            }
+        }
+    };
 
     // Effect to listen for scan errors to show modal (workaround for useCallback dependency)
     useEffect(() => {
@@ -362,31 +411,94 @@ const RemitoForm = () => {
                 type={modalConfig.type}
             />
 
+            <FichajeModal
+                isOpen={fichajeState.isOpen}
+                onClose={() => setFichajeState(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={handleFichajeConfirm}
+                product={fichajeState.product}
+                existingQuantity={fichajeState.existingQuantity}
+                expectedQuantity={fichajeState.expectedQuantity}
+            />
+
             {/* Clarification Modal */}
             {showClarificationModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
-                        <div className="px-6 py-4 border-b bg-yellow-50 border-yellow-100">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b bg-yellow-50 border-yellow-100 flex-shrink-0">
                             <h3 className="text-lg font-bold text-yellow-800 flex items-center">
                                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                                 Diferencias Encontradas
                             </h3>
                         </div>
-                        <div className="p-6">
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
                             <p className="text-gray-700 mb-4">
                                 Se han detectado diferencias entre el pedido y lo escaneado. Por favor, ingrese una aclaración para continuar.
                             </p>
 
                             {pendingDiscrepancies && (
-                                <div className="mb-4 bg-gray-50 p-3 rounded-lg text-sm">
+                                <div className="mb-6 bg-gray-50 p-4 rounded-lg text-sm border border-gray-100">
                                     {pendingDiscrepancies.missing.length > 0 && (
-                                        <div className="mb-2">
-                                            <span className="font-bold text-red-600">Faltantes:</span> {pendingDiscrepancies.missing.length} items
+                                        <div className="mb-4">
+                                            <button
+                                                onClick={() => setMissingExpanded(!missingExpanded)}
+                                                className="w-full flex items-center justify-between mb-3 hover:bg-gray-100 p-2 rounded transition"
+                                            >
+                                                <span className="font-bold text-red-700 flex items-center text-base">
+                                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                                    Faltantes ({pendingDiscrepancies.missing.length})
+                                                </span>
+                                                <svg className={`w-5 h-5 text-gray-500 transform transition-transform ${missingExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+
+                                            {missingExpanded && (
+                                                <div className="space-y-3 max-h-[300px] overflow-y-auto p-1 custom-scrollbar">
+                                                    {pendingDiscrepancies.missing.map(item => (
+                                                        <div key={item.code} className="bg-white p-3 rounded border border-gray-200 shadow-sm">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">{item.description}</p>
+                                                                    <p className="text-xs text-gray-500">{item.code}</p>
+                                                                </div>
+                                                                <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">
+                                                                    Faltan: {item.expected - item.scanned}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="mt-2 flex gap-4">
+                                                                <label className="flex items-center cursor-pointer">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`reason-${item.code}`}
+                                                                        value="no_stock"
+                                                                        checked={missingReasons[item.code] === 'no_stock'}
+                                                                        onChange={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'no_stock' }))}
+                                                                        className="w-4 h-4 text-brand-blue border-gray-300 focus:ring-brand-blue"
+                                                                    />
+                                                                    <span className="ml-2 text-sm text-gray-700">Sin Stock</span>
+                                                                </label>
+                                                                <label className="flex items-center cursor-pointer">
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`reason-${item.code}`}
+                                                                        value="damaged"
+                                                                        checked={missingReasons[item.code] === 'damaged'}
+                                                                        onChange={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'damaged' }))}
+                                                                        className="w-4 h-4 text-brand-blue border-gray-300 focus:ring-brand-blue"
+                                                                    />
+                                                                    <span className="ml-2 text-sm text-gray-700">Producto Dañado</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
+
                                     {pendingDiscrepancies.extra.length > 0 && (
-                                        <div>
-                                            <span className="font-bold text-orange-600">Sobrantes:</span> {pendingDiscrepancies.extra.length} items
+                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                            <span className="font-bold text-orange-600 block mb-2">Sobrantes ({pendingDiscrepancies.extra.length}) items</span>
+                                            <p className="text-xs text-gray-500">Estos items se agregarán al remito como extra.</p>
                                         </div>
                                     )}
                                 </div>
@@ -407,6 +519,8 @@ const RemitoForm = () => {
                                 onClick={() => {
                                     setShowClarificationModal(false);
                                     setClarificationText('');
+                                    setMissingReasons({});
+                                    setMissingExpanded(false);
                                     setPendingDiscrepancies(null);
                                 }}
                                 className="px-4 py-2 text-gray-700 font-semibold hover:bg-gray-100 rounded-lg transition"
@@ -440,18 +554,27 @@ const RemitoForm = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-brand-gray mb-2">Número de Pedido</label>
+                        <label className="block text-sm font-medium text-brand-gray mb-2">Seleccionar Pedido</label>
                         <div className="flex flex-col md:flex-row gap-3">
-                            <input
-                                type="text"
+                            <select
                                 value={preRemitoNumber}
                                 onChange={(e) => setPreRemitoNumber(e.target.value)}
-                                className="flex-1 h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-base"
-                                placeholder="Ej: 123456"
-                            />
+                                className="flex-1 h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-base bg-white"
+                            >
+                                <option value="">Seleccione un pedido...</option>
+                                {Array.isArray(preRemitoList) && preRemitoList.map((pre) => (
+                                    <option key={pre.id} value={pre.order_number}>
+                                        Pedido #{pre.order_number} ({new Date(pre.created_at).toLocaleDateString()})
+                                    </option>
+                                ))}
+                            </select>
                             <button
                                 onClick={handleLoadPreRemito}
-                                className="h-12 w-full md:w-auto bg-brand-blue text-white px-6 rounded-lg hover:bg-blue-800 transition font-medium shadow-sm flex items-center justify-center"
+                                disabled={!preRemitoNumber}
+                                className={`h-12 w-full md:w-auto px-6 rounded-lg transition font-medium shadow-sm flex items-center justify-center ${!preRemitoNumber
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-brand-blue text-white hover:bg-blue-800'
+                                    }`}
                             >
                                 Cargar
                             </button>
@@ -492,14 +615,14 @@ const RemitoForm = () => {
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Left Column: Inputs */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div>
+                    {/* Remito Number Input Removed - Auto-assigned from Order */}
+                    <div className="hidden">
                         <label className="block text-sm font-medium text-brand-dark mb-2">Número de Remito (Final)</label>
                         <input
                             type="text"
                             value={remitoNumber}
-                            onChange={(e) => setRemitoNumber(e.target.value)}
-                            className="w-full h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-lg font-medium"
-                            placeholder="Ej: 0001-00001234"
+                            readOnly
+                            className="w-full h-12 p-3 border border-gray-200 bg-gray-50 rounded-lg text-gray-500"
                         />
                     </div>
 

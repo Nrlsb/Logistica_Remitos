@@ -199,6 +199,22 @@ app.post('/api/pre-remitos', verifyToken, async (req, res) => {
     }
 });
 
+// Get all pre-remitos (for selection list)
+app.get('/api/pre-remitos', verifyToken, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('pre_remitos')
+            .select('id, order_number, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching pre-remitos:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Get pre-remito by order number
 app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
     const { orderNumber } = req.params;
