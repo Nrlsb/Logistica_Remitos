@@ -16,6 +16,10 @@ const RemitoForm = () => {
     const [expectedItems, setExpectedItems] = useState(null); // null = no pre-remito loaded
     const [preRemitoStatus, setPreRemitoStatus] = useState(''); // 'loading', 'found', 'not_found', 'error'
 
+    // Manual Autocomplete State
+    const [manualSuggestions, setManualSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
     // Modal State
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
@@ -385,11 +389,40 @@ const RemitoForm = () => {
     }, []);
 
 
+    const handleManualChange = (e) => {
+        const value = e.target.value;
+        setManualCode(value);
+
+        if (!expectedItems || value.length < 2) {
+            setShowSuggestions(false);
+            return;
+        }
+
+        // Filter expected items by description or code
+        const matches = expectedItems.filter(item =>
+            (item.description && item.description.toLowerCase().includes(value.toLowerCase())) ||
+            (item.code && item.code.toLowerCase().includes(value.toLowerCase()))
+        );
+
+        setManualSuggestions(matches.slice(0, 5)); // Limit to 5 suggestions
+        setShowSuggestions(matches.length > 0);
+    };
+
+    const handleSelectSuggestion = (product) => {
+        setManualCode(product.code); // Fill with code so "Agregar" works as expected
+        setShowSuggestions(false);
+        // Optional: auto-submit or just focus button? Let's just fill for now to be safe.
+        // If user wants speed, we can auto-trigger handleScan(product.code) here.
+    };
+
     const handleManualSubmit = (e) => {
         e.preventDefault();
+        // If one suggestion is visible and exactly matches input or user just hits enter on a filtered list?
+        // Standard behavior: submit what's in the box.
         if (manualCode) {
             handleScan(manualCode);
             setManualCode('');
+            setShowSuggestions(false);
         }
     };
 
@@ -630,17 +663,38 @@ const RemitoForm = () => {
                         <h3 className="text-lg font-semibold mb-4 text-brand-dark">Agregar Productos</h3>
 
                         {/* Manual Input */}
-                        <form onSubmit={handleManualSubmit} className="mb-0">
+                        <form onSubmit={handleManualSubmit} className="mb-0 relative">
                             <label className="block text-xs font-medium text-brand-gray mb-1 uppercase tracking-wide">Ingreso Manual</label>
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-3 relative">
                                 <input
                                     type="text"
                                     value={manualCode}
-                                    onChange={(e) => setManualCode(e.target.value)}
+                                    onChange={handleManualChange}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click on suggestion
+                                    onFocus={() => manualCode.length >= 2 && setShowSuggestions(true)}
                                     className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition text-base"
-                                    placeholder="Código de barras"
+                                    placeholder="Código o Descripción"
                                     autoFocus
+                                    autoComplete="off"
                                 />
+
+                                {showSuggestions && manualSuggestions.length > 0 && (
+                                    <ul className="absolute bottom-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg mb-1 max-h-60 overflow-y-auto z-50">
+                                        {manualSuggestions.map((item, idx) => (
+                                            <li
+                                                key={idx}
+                                                onClick={() => handleSelectSuggestion(item)}
+                                                className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 flex justify-between items-center"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="block text-sm font-medium text-gray-800 truncate">{item.description}</span>
+                                                    <span className="block text-xs text-gray-500">{item.code}</span>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
                                 <button type="submit" className="h-12 w-full bg-brand-blue text-white border border-transparent rounded-lg hover:bg-blue-800 transition shadow-sm flex items-center justify-center font-medium">
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                                     Agregar
@@ -739,9 +793,6 @@ const RemitoForm = () => {
                                                             +
                                                         </button>
                                                     </div>
-                                                    {expectedItems && expectedQty !== null && (
-                                                        <span className="text-xs text-brand-gray mt-1 font-medium">de {expectedQty} req.</span>
-                                                    )}
                                                 </div>
                                                 <button
                                                     onClick={() => handleRemoveItem(item.code)}
