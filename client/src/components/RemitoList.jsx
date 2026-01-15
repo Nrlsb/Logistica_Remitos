@@ -443,16 +443,7 @@ const RemitoList = () => {
                                                         <span className="text-xs font-normal mb-1 opacity-80">Faltantes</span>
                                                         <span className="text-xl">{selectedRemito.discrepancies.missing?.length || 0}</span>
                                                     </button>
-                                                    <button
-                                                        onClick={() => setDiscrepancyTab('extra')}
-                                                        className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition flex flex-col items-center justify-center border-2 ${discrepancyTab === 'extra'
-                                                            ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm'
-                                                            : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200'
-                                                            }`}
-                                                    >
-                                                        <span className="text-xs font-normal mb-1 opacity-80">Sobrantes</span>
-                                                        <span className="text-xl">{selectedRemito.discrepancies.extra?.length || 0}</span>
-                                                    </button>
+
                                                 </div>
 
                                                 <div className="min-h-[150px]">
@@ -495,34 +486,7 @@ const RemitoList = () => {
                                                         </div>
                                                     )}
 
-                                                    {discrepancyTab === 'extra' && (
-                                                        <div className="animate-in fade-in duration-200">
-                                                            {selectedRemito.discrepancies.extra?.length > 0 ? (
-                                                                <ul className="space-y-3">
-                                                                    {selectedRemito.discrepancies.extra.map((item, idx) => (
-                                                                        <li key={idx} className="flex items-start bg-[#FFFBEB] p-3 rounded-r-lg border-l-4 border-amber-500 shadow-sm">
-                                                                            <div className="mt-1 mr-3 text-amber-500">
-                                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                                                            </div>
-                                                                            <div className="flex-1 min-w-0 mr-3">
-                                                                                <span className="text-gray-900 font-medium text-sm block line-clamp-2 leading-snug mb-1">{item.description || item.code}</span>
-                                                                                <span className="text-xs text-gray-500 font-mono block">{item.code}</span>
-                                                                            </div>
-                                                                            <div className="flex flex-col items-center justify-center">
-                                                                                <div className="h-10 w-10 rounded-full bg-white border-2 border-amber-100 flex items-center justify-center shadow-sm">
-                                                                                    <span className="text-sm font-bold text-amber-600">+{item.quantity}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            ) : (
-                                                                <div className="text-center py-8 text-gray-400 text-sm">
-                                                                    No hay sobrantes registrados
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+
                                                 </div>
                                             </>
                                         ) : (
