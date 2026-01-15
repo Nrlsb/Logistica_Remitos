@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Modal from './Modal';
+import { useAuth } from '../context/AuthContext';
 
 const RemitoList = () => {
+    const { user } = useAuth();
     const [remitos, setRemitos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRemito, setSelectedRemito] = useState(null);
@@ -269,7 +271,9 @@ const RemitoList = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    {user?.role === 'admin' && (
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -283,12 +287,14 @@ const RemitoList = () => {
                                             <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
                                             <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
                                             <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right"><div className="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
+                                            {user?.role === 'admin' && (
+                                                <td className="px-6 py-4 whitespace-nowrap text-right"><div className="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
+                                            )}
                                         </tr>
                                     ))
                                 ) : filteredRemitos.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
+                                        <td colSpan={user?.role === 'admin' ? "8" : "7"} className="px-6 py-10 text-center text-gray-500">
                                             No se encontraron remitos
                                         </td>
                                     </tr>
@@ -332,11 +338,13 @@ const RemitoList = () => {
                                                     {remito.discrepancies && Object.keys(remito.discrepancies).length > 0 ? 'Pendiente' : 'Procesado'}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button onClick={() => handleViewDetails(remito)} className="text-gray-400 hover:text-brand-blue transition">
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 5 8.268 7.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                                </button>
-                                            </td>
+                                            {user?.role === 'admin' && (
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button onClick={() => handleViewDetails(remito)} className="text-gray-400 hover:text-brand-blue transition">
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 5 8.268 7.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))
                                 )}
