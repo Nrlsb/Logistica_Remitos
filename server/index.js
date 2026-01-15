@@ -200,15 +200,32 @@ app.post('/api/pre-remitos', verifyToken, async (req, res) => {
 });
 
 // Get all pre-remitos (for selection list)
+// Get all pre-remitos (for selection list) with PV info
 app.get('/api/pre-remitos', verifyToken, async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('pre_remitos')
-            .select('id, order_number, created_at')
+            .select(`
+                id, 
+                order_number, 
+                created_at,
+                pedidos_ventas (
+                    numero_pv,
+                    sucursal
+                )
+            `)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(data);
+
+        // Flatten the structure for easier frontend consumption
+        const formattedData = data.map(item => ({
+            ...item,
+            numero_pv: item.pedidos_ventas?.[0]?.numero_pv || null,
+            sucursal: item.pedidos_ventas?.[0]?.sucursal || null
+        }));
+
+        res.json(formattedData);
     } catch (error) {
         console.error('Error fetching pre-remitos:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -221,7 +238,13 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('pre_remitos')
-            .select('*')
+            .select(`
+                *,
+                pedidos_ventas (
+                    numero_pv,
+                    sucursal
+                )
+            `)
             .eq('order_number', orderNumber)
             .single();
 
@@ -232,7 +255,15 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
             throw error;
         }
 
-        res.json(data);
+        // Flatten info
+        const responseData = {
+            ...data,
+            numero_pv: data.pedidos_ventas?.[0]?.numero_pv || null,
+            sucursal: data.pedidos_ventas?.[0]?.sucursal || null,
+            pedidos_ventas: undefined // Remove the array
+        };
+
+        res.json(responseData);
     } catch (error) {
         console.error('Error fetching pre-remito:', error);
         res.status(500).json({ message: 'Internal server error' });

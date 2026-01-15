@@ -687,7 +687,7 @@ const RemitoForm = () => {
                                                 className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 flex justify-between items-center"
                                             >
                                                 <div className="flex-1 min-w-0">
-                                                    <span className="block text-sm font-medium text-gray-800 truncate">{item.description}</span>
+                                                    <span className="block text-sm font-medium text-gray-800">{item.description}</span>
                                                     <span className="block text-xs text-gray-500">{item.code}</span>
                                                 </div>
                                             </li>
