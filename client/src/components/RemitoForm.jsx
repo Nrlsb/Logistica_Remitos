@@ -265,6 +265,17 @@ const RemitoForm = () => {
         }
     };
 
+    // Sound effect helper
+    const playBeep = () => {
+        try {
+            const audio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbqWEyM2CfutSqYzM0YZ661KxjMzRhnbjUrGMzNGGct9SsYzM0YZu21KxjMzRhmrXUrGMzNGGYtNSsYzM0YZez1KxjMzRhlrLUrGMzNGGVsdSsYzM0YZSw1KxjMzRhk6/UrGMzNGGTrtSsYzM0YZKtdGEzNGGTrHRhMzRhkqt0YTM0YZKqdGEzNGGSqnRhMzRhkql0YTM0YZKpdGEzNGGSqHRhMzRhkqd0YTM0YZKmdGEzNGGSqHRhMzRhkqZ0YTM0YZKldGEzNGGSpHRhMzRhkqR0YTM0YZKjdGEzNGGSo3RhMzRhkqJ0YTM0YZKidGEzNGGSoXRhMzRhkqF0YTM0YZKgdGEzNGGSoHRhMzRhkp90YTM0YZKfdGEzNGGSnXRhMzRhkp10YTM0YZKcdGEzNGGSm3RhMzRhkpt0YTM0YZKadGEzNGGSmXRhMzRhkpl0YTM0YZKYdGEzNGGSmHRhMzRhkpd0YTM0YZKWdGEzNGGSlXRhMzRhkpV0YTM0YZKUdGEzNGGSlHRhMzRhkpN0YTM0YZKTdGEzNGGSkXRhMzRhkpJ0YTM0YZKRdGEzNGGSkXRhMzRhkpB0YTM0YZKQdGEzNGGSkHRhMzRhk490YTM0YZOPdGEzNGGTj3RhMzRhk450YTM0YZOOdGEzNGGTjnRhMzRhk410YTM0YZONdGEzNGGTjXRhMzRhk4x0YTM0YZOMdGEzNGGTjHRhMzRhk4t0YTM0YZOLdGEzNGGTi3RhMzRhk4p0YTM0YZOKdGEzNGGTinRhMzRhk4l0YTM0YZOJdGEzNGGTiXRhMzRhk4h0YTM0YZOIdGEzNGGTiHRhMzRhk4d0YTM0YZOHdGEzNGGTg3RhMzRh");
+            audio.volume = 0.5;
+            audio.play().catch(e => console.warn("Audio play failed", e));
+        } catch (e) {
+            console.warn("Audio init failed", e);
+        }
+    };
+
     // Handle barcode scan (from camera or physical scanner)
     const handleScan = React.useCallback((rawCode) => {
         const inputCode = rawCode.trim(); // Trim whitespace/newlines
@@ -295,9 +306,10 @@ const RemitoForm = () => {
         }
 
         const openFichajeModal = (product, expQty) => {
-            // Find current quantity in scanned items
             const existingItem = currentItems.find(i => i.code === product.code);
             const currentQty = existingItem ? existingItem.quantity : 0;
+
+            playBeep();
 
             setFichajeState({
                 isOpen: true,
