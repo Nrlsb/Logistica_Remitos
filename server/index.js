@@ -125,6 +125,13 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
 
         if (error) throw error;
 
+        // Update pre-remito status to 'processed'
+        // We don't await the result strictly for the response, but it should happen
+        await supabase
+            .from('pre_remitos')
+            .update({ status: 'processed' })
+            .eq('order_number', remitoNumber);
+
         res.status(201).json(data[0]);
     } catch (error) {
         console.error('Error creating remito:', error);
@@ -132,17 +139,50 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
     }
 });
 
-// Get all remitos
+// Get all remitos with manual join to pre-remitos/PV
 app.get('/api/remitos', verifyToken, async (req, res) => {
     try {
-        const { data, error } = await supabase
+        // 1. Fetch all processed remitos
+        const { data: remitosData, error: remitosError } = await supabase
             .from('remitos')
             .select('*')
             .order('date', { ascending: false });
 
-        if (error) throw error;
+        if (remitosError) throw remitosError;
 
-        res.json(data);
+        // 2. Fetch all pre-remitos with PV info
+        const { data: preRemitosData, error: preRemitosError } = await supabase
+            .from('pre_remitos')
+            .select(`
+                order_number,
+                pedidos_ventas (
+                    numero_pv,
+                    sucursal
+                )
+            `);
+
+        if (preRemitosError) throw preRemitosError;
+
+        // 3. Create a lookup map for speed
+        const preRemitoMap = {};
+        preRemitosData.forEach(pre => {
+            preRemitoMap[pre.order_number] = {
+                numero_pv: pre.pedidos_ventas?.[0]?.numero_pv || '-',
+                sucursal: pre.pedidos_ventas?.[0]?.sucursal || '-'
+            };
+        });
+
+        // 4. Merge data
+        const formattedData = remitosData.map(remito => {
+            const extraInfo = preRemitoMap[remito.remito_number] || { numero_pv: '-', sucursal: '-' };
+            return {
+                ...remito,
+                numero_pv: extraInfo.numero_pv,
+                sucursal: extraInfo.sucursal
+            };
+        });
+
+        res.json(formattedData);
     } catch (error) {
         console.error('Error fetching remitos:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -214,6 +254,7 @@ app.get('/api/pre-remitos', verifyToken, async (req, res) => {
                     sucursal
                 )
             `)
+            .neq('status', 'processed') // Filter out processed orders
             .order('created_at', { ascending: false });
 
         if (error) throw error;

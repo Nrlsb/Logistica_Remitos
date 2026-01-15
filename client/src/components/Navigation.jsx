@@ -41,7 +41,7 @@ const Navigation = () => {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center space-x-4">
-                    <Link to="/" className={getLinkClass('/')}>Nuevo Remito</Link>
+                    <Link to="/" className={getLinkClass('/')}>Nuevo Pedido de Venta</Link>
                     <Link to="/list" className={getLinkClass('/list')}>Historial</Link>
                     {user?.role === 'admin' && (
                         <Link to="/discrepancies" className={getLinkClass('/discrepancies')}>Discrepancias</Link>
@@ -78,7 +78,7 @@ const Navigation = () => {
             {isOpen && (
                 <div className="md:hidden bg-blue-900 border-t border-blue-800">
                     <div className="px-2 pt-2 pb-3 space-y-1">
-                        <Link to="/" className={getMobileLinkClass('/')} onClick={() => setIsOpen(false)}>Nuevo Remito</Link>
+                        <Link to="/" className={getMobileLinkClass('/')} onClick={() => setIsOpen(false)}>Nuevo Pedido de Venta</Link>
                         <Link to="/list" className={getMobileLinkClass('/list')} onClick={() => setIsOpen(false)}>Historial</Link>
                         {user?.role === 'admin' && (
                             <Link to="/discrepancies" className={getMobileLinkClass('/discrepancies')} onClick={() => setIsOpen(false)}>Discrepancias</Link>
