@@ -41,15 +41,21 @@ const Navigation = () => {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex items-center space-x-4">
-                    <Link to="/" className={getLinkClass('/')}>Nuevo Pedido de Venta</Link>
-                    <Link to="/list" className={getLinkClass('/list')}>Historial</Link>
+                    {(user?.role === 'admin' || user?.role !== 'supervisor') && (
+                        <Link to="/" className={getLinkClass('/')}>Nuevo Pedido de Venta</Link>
+                    )}
+                    {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                        <Link to="/list" className={getLinkClass('/list')}>Historial</Link>
+                    )}
                     {user?.role === 'admin' && (
                         <Link to="/discrepancies" className={getLinkClass('/discrepancies')}>Discrepancias</Link>
                     )}
                     <div className="flex items-center space-x-4 ml-6 pl-6 border-l border-blue-400/30">
                         <div className="flex flex-col items-end">
                             <span className="text-sm font-medium leading-none">{user?.username}</span>
-                            <span className="text-xs text-blue-200">{user?.role === 'admin' ? 'Administrador' : 'Operador'}</span>
+                            <span className="text-xs text-blue-200">
+                                {user?.role === 'admin' ? 'Administrador' : user?.role === 'supervisor' ? 'Supervisor' : 'Operador'}
+                            </span>
                         </div>
                         <button
                             onClick={logout}
@@ -78,8 +84,12 @@ const Navigation = () => {
             {isOpen && (
                 <div className="md:hidden bg-blue-900 border-t border-blue-800">
                     <div className="px-2 pt-2 pb-3 space-y-1">
-                        <Link to="/" className={getMobileLinkClass('/')} onClick={() => setIsOpen(false)}>Nuevo Pedido de Venta</Link>
-                        <Link to="/list" className={getMobileLinkClass('/list')} onClick={() => setIsOpen(false)}>Historial</Link>
+                        {(user?.role === 'admin' || user?.role !== 'supervisor') && (
+                            <Link to="/" className={getMobileLinkClass('/')} onClick={() => setIsOpen(false)}>Nuevo Pedido de Venta</Link>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                            <Link to="/list" className={getMobileLinkClass('/list')} onClick={() => setIsOpen(false)}>Historial</Link>
+                        )}
                         {user?.role === 'admin' && (
                             <Link to="/discrepancies" className={getMobileLinkClass('/discrepancies')} onClick={() => setIsOpen(false)}>Discrepancias</Link>
                         )}
@@ -88,7 +98,9 @@ const Navigation = () => {
                         <div className="flex items-center px-5">
                             <div className="ml-3">
                                 <div className="text-base font-medium leading-none text-white">{user?.username}</div>
-                                <div className="text-sm font-medium leading-none text-blue-300 mt-1">{user?.role}</div>
+                                <div className="text-sm font-medium leading-none text-blue-300 mt-1">
+                                    {user?.role === 'admin' ? 'Administrador' : user?.role === 'supervisor' ? 'Supervisor' : 'Operador'}
+                                </div>
                             </div>
                             <button
                                 onClick={logout}
