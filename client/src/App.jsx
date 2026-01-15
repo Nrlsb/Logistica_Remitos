@@ -20,6 +20,14 @@ import Navigation from './components/Navigation';
 
 import Modal from './components/Modal';
 
+const RoleBasedHome = () => {
+  const { user } = useAuth();
+  if (user?.role === 'supervisor') {
+    return <Navigate to="/list" replace />;
+  }
+  return <RemitoForm />;
+};
+
 const AppContent = () => {
   const { sessionExpired, closeSessionExpiredModal } = useAuth();
 
@@ -41,7 +49,7 @@ const AppContent = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/" element={
               <ProtectedRoute>
-                <RemitoForm />
+                <RoleBasedHome />
               </ProtectedRoute>
             } />
             <Route path="/list" element={
