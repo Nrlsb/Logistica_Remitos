@@ -17,6 +17,9 @@ const AchiqueList = () => {
     const [packagesInput, setPackagesInput] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Confirmation Modal State
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
     useEffect(() => {
         fetchRemitos();
     }, []);
@@ -47,12 +50,17 @@ const AchiqueList = () => {
         setPackagesInput('');
     };
 
-    const handleSaveAndPrint = async () => {
+    const handleSaveAndPrint = () => {
         const qty = parseInt(packagesInput, 10);
         if (!qty || qty < 1) {
             toast.warning('Ingrese una cantidad válida de bultos');
             return;
         }
+        setIsConfirmModalOpen(true);
+    };
+
+    const executeSaveAndPrint = async () => {
+        const qty = parseInt(packagesInput, 10);
 
         setIsSaving(true);
         try {
@@ -83,6 +91,7 @@ const AchiqueList = () => {
 
             toast.success('Bultos actualizados y etiqueta generada');
 
+            setIsConfirmModalOpen(false);
             handleCloseModal();
         } catch (error) {
             console.error('Error saving packages:', error);
@@ -244,6 +253,32 @@ const AchiqueList = () => {
                 </div>
             </div>
 
+            {isConfirmModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">¿Confirmar Acción?</h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                ¿Desea imprimir y enviar los datos del pre-remito a Protheus?
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsConfirmModalOpen(false)}
+                                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={executeSaveAndPrint}
+                                    className="flex-1 px-4 py-2 bg-brand-blue text-white hover:bg-blue-700 rounded-lg font-bold shadow-md hover:shadow-lg transition"
+                                >
+                                    Sí, Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Modal */}
             {isModalOpen && selectedRemito && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
