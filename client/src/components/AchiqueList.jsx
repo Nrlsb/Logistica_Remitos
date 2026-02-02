@@ -3,8 +3,10 @@ import api from '../api';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import Fuse from 'fuse.js';
+import { useAuth } from '../context/AuthContext';
 
 const AchiqueList = () => {
+    const { user } = useAuth();
     const [remitos, setRemitos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -61,7 +63,12 @@ const AchiqueList = () => {
             });
 
             // 2. Generate PDF
-            const updatedRemito = { ...selectedRemito, ...responsePacked.data };
+            // Ensure we have the user name for the label, fallback to current user if backend doesn't return it immediately
+            const updatedRemito = {
+                ...selectedRemito,
+                ...responsePacked.data,
+                packages_added_by: responsePacked.data.packages_added_by || user?.username || 'Usuario'
+            };
             generateLabelsPDF(updatedRemito, qty);
 
             // 3. Update backend (Finalized state) - Assuming print process initiated
