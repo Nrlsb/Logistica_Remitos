@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Modal from './Modal';
 import { useAuth } from '../context/AuthContext';
+import Fuse from 'fuse.js';
 
 const RemitoList = () => {
     const { user } = useAuth();
@@ -43,30 +44,52 @@ const RemitoList = () => {
     };
 
     // Filter Logic
-    const filteredRemitos = remitos.filter(remito => {
-        const matchesSearch = remito.remito_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredRemitos = React.useMemo(() => {
+        let results = remitos;
 
-        let matchesDate = true;
+        // 1. Date Filtering
         if (startDate || endDate) {
-            const remitoDate = new Date(remito.date);
-            // Reset time for accurate date comparison
-            remitoDate.setHours(0, 0, 0, 0);
+            results = results.filter(remito => {
+                const remitoDate = new Date(remito.date);
+                remitoDate.setHours(0, 0, 0, 0);
 
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                if (remitoDate < start) matchesDate = false;
-            }
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0);
+                    if (remitoDate < start) return false;
+                }
 
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                if (remitoDate > end) matchesDate = false;
-            }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999);
+                    if (remitoDate > end) return false;
+                }
+                return true;
+            });
         }
 
-        return matchesSearch && matchesDate;
-    });
+        // 2. Smart Search (Fuse.js)
+        if (searchTerm) {
+            const fuse = new Fuse(results, {
+                keys: [
+                    'remito_number',
+                    'numero_pv',
+                    'sucursal',
+                    'created_by',
+                    'items.description', // Search inside items too!
+                    'items.code'
+                ],
+                threshold: 0.3, // 0.0 = perfect match, 1.0 = match anything
+                ignoreLocation: true,
+                useExtendedSearch: true
+            });
+
+            results = fuse.search(searchTerm).map(result => result.item);
+        }
+
+        return results;
+    }, [remitos, searchTerm, startDate, endDate]);
+
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -3,6 +3,7 @@ import Scanner from './Scanner';
 import Modal from './Modal';
 import FichajeModal from './FichajeModal';
 import api from '../api';
+import Fuse from 'fuse.js';
 
 const RemitoForm = () => {
     const [items, setItems] = useState([]);
@@ -415,11 +416,14 @@ const RemitoForm = () => {
             return;
         }
 
-        // Filter expected items by description or code
-        const matches = expectedItems.filter(item =>
-            (item.description && item.description.toLowerCase().includes(value.toLowerCase())) ||
-            (item.code && item.code.toLowerCase().includes(value.toLowerCase()))
-        );
+        // Smart Search for suggestions
+        const fuse = new Fuse(expectedItems, {
+            keys: ['description', 'code'],
+            threshold: 0.3,
+            ignoreLocation: true
+        });
+
+        const matches = fuse.search(value).map(result => result.item);
 
         setManualSuggestions(matches.slice(0, 5)); // Limit to 5 suggestions
         setShowSuggestions(matches.length > 0);

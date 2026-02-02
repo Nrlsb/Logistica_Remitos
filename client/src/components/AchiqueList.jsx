@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import Fuse from 'fuse.js';
 
 const AchiqueList = () => {
     const [remitos, setRemitos] = useState([]);
@@ -126,10 +127,22 @@ const AchiqueList = () => {
         doc.save(`Etiquetas_${remito.remito_number}.pdf`);
     };
 
-    const filteredRemitos = remitos.filter(remito =>
-        remito.remito_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        remito.numero_pv?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filter Logic
+
+    const filteredRemitos = React.useMemo(() => {
+        let results = remitos;
+
+        if (searchTerm) {
+            const fuse = new Fuse(results, {
+                keys: ['remito_number', 'numero_pv', 'sucursal'],
+                threshold: 0.3,
+                ignoreLocation: true
+            });
+            results = fuse.search(searchTerm).map(result => result.item);
+        }
+
+        return results;
+    }, [remitos, searchTerm]);
 
     return (
         <div className="space-y-6">
