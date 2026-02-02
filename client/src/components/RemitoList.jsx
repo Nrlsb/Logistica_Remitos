@@ -230,14 +230,30 @@ const RemitoList = () => {
                                                 {new Date(remito.date).toLocaleDateString()} • {new Date(remito.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${remito.status === 'processed'
-                                            ? 'bg-green-100 text-green-800'
-                                            : remito.status === 'voided'
-                                                ? 'bg-gray-100 text-gray-800'
-                                                : 'bg-amber-100 text-amber-800'
-                                            }`}>
-                                            {remito.status === 'processed' ? 'Procesado' : remito.status === 'voided' ? 'Anulado' : 'Pendiente'}
-                                        </span>
+                                        {(() => {
+                                            let badgeColor = 'bg-gray-100 text-gray-800';
+                                            let label = 'Escaneado';
+
+                                            if (remito.status === 'finalized') {
+                                                badgeColor = 'bg-green-100 text-green-800';
+                                                label = 'Finalizado';
+                                            } else if (remito.status === 'packed') {
+                                                badgeColor = 'bg-blue-100 text-blue-800';
+                                                label = 'Achicado';
+                                            } else if (remito.status === 'scanned' || remito.status === 'processed') {
+                                                badgeColor = 'bg-gray-100 text-gray-800';
+                                                label = 'Escaneado';
+                                            } else if (remito.status === 'voided') {
+                                                badgeColor = 'bg-red-100 text-red-800';
+                                                label = 'Anulado';
+                                            }
+
+                                            return (
+                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${badgeColor}`}>
+                                                    {label}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
                                         <div className="flex items-center">
@@ -334,9 +350,30 @@ const RemitoList = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${remito.discrepancies && Object.keys(remito.discrepancies).length > 0 ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}`}>
-                                                    {remito.discrepancies && Object.keys(remito.discrepancies).length > 0 ? 'Pendiente' : 'Procesado'}
-                                                </span>
+                                                {(() => {
+                                                    let badgeColor = 'bg-gray-100 text-gray-800';
+                                                    let label = 'Escaneado';
+
+                                                    if (remito.status === 'finalized') {
+                                                        badgeColor = 'bg-green-100 text-green-800';
+                                                        label = 'Finalizado';
+                                                    } else if (remito.status === 'packed') {
+                                                        badgeColor = 'bg-blue-100 text-blue-800';
+                                                        label = 'Achicado';
+                                                    } else if (remito.status === 'scanned' || remito.status === 'processed') {
+                                                        badgeColor = 'bg-gray-100 text-gray-800';
+                                                        label = 'Escaneado';
+                                                    } else if (remito.status === 'voided') {
+                                                        badgeColor = 'bg-red-100 text-red-800';
+                                                        label = 'Anulado';
+                                                    }
+
+                                                    return (
+                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeColor}`}>
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             {user?.role === 'admin' && (
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

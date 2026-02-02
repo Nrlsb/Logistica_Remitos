@@ -53,20 +53,27 @@ const AchiqueList = () => {
 
         setIsSaving(true);
         try {
-            // 1. Update backend
-            const response = await api.patch(`/api/remitos/${selectedRemito.id}/packages`, {
-                total_packages: qty
+            // 1. Update backend (Packed state)
+            const responsePacked = await api.patch(`/api/remitos/${selectedRemito.id}`, {
+                total_packages: qty,
+                status: 'packed'
             });
 
-            // 2. Update local state
+            // 2. Generate PDF
+            const updatedRemito = { ...selectedRemito, ...responsePacked.data };
+            generateLabelsPDF(updatedRemito, qty);
+
+            // 3. Update backend (Finalized state) - Assuming print process initiated
+            const responseFinalized = await api.patch(`/api/remitos/${selectedRemito.id}`, {
+                status: 'finalized'
+            });
+
+            // 4. Update local state
             setRemitos(prev => prev.map(r =>
-                r.id === selectedRemito.id ? { ...r, ...response.data, total_packages: qty } : r
+                r.id === selectedRemito.id ? { ...r, ...responseFinalized.data } : r
             ));
 
-            toast.success('Bultos actualizados correctamente');
-
-            // 3. Generate PDF
-            generateLabelsPDF(selectedRemito, qty);
+            toast.success('Bultos actualizados y etiqueta generada');
 
             handleCloseModal();
         } catch (error) {
@@ -97,13 +104,18 @@ const AchiqueList = () => {
 
             doc.setFontSize(16);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pedido: ${remito.remito_number}`, 75, 70, { align: 'center' });
+            doc.text(`Pre-remito: ${remito.remito_number}`, 75, 70, { align: 'center' });
 
             if (remito.numero_pv) {
                 doc.text(`PV: ${remito.numero_pv}`, 75, 80, { align: 'center' });
             }
             if (remito.sucursal) {
                 doc.text(`Sucursal: ${remito.sucursal}`, 75, 90, { align: 'center' });
+            }
+
+            if (remito.packages_added_by) {
+                doc.setFontSize(12);
+                doc.text(`Achicado por: ${remito.packages_added_by}`, 75, 105, { align: 'center' });
             }
 
             doc.setFontSize(10);
@@ -143,7 +155,7 @@ const AchiqueList = () => {
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold">
                                 <th className="px-6 py-4">Fecha</th>
-                                <th className="px-6 py-4">Pedido / Remito</th>
+                                <th className="px-6 py-4">Pre-remito / Remito</th>
                                 <th className="px-6 py-4">PV / Sucursal</th>
                                 <th className="px-6 py-4 text-center">Items</th>
                                 <th className="px-6 py-4 text-center">Bultos</th>
@@ -219,7 +231,7 @@ const AchiqueList = () => {
                         <div className="p-6">
                             <h3 className="text-lg font-bold text-gray-900 mb-2">Cantidad de Bultos</h3>
                             <p className="text-sm text-gray-500 mb-4">
-                                Ingresa la cantidad total de bultos para el pedido <span className="font-mono font-medium">{selectedRemito.remito_number}</span>.
+                                Ingresa la cantidad total de bultos para el pre-remito <span className="font-mono font-medium">{selectedRemito.remito_number}</span>.
                             </p>
 
                             <div className="mb-6">

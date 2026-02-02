@@ -117,7 +117,7 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
                     items: items,
                     discrepancies: discrepancies || {}, // Save discrepancies if provided
                     clarification: clarification || null,
-                    status: 'processed', // Assuming auto-processed for now
+                    status: 'scanned', // Initial status
                     created_by: req.user.username // Save the username from the token
                 }
             ])
@@ -139,22 +139,28 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
     }
 });
 
-// Update remito packages
-app.patch('/api/remitos/:id/packages', verifyToken, async (req, res) => {
+// Update remito (generic)
+app.patch('/api/remitos/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
-    const { total_packages } = req.body;
+    const { total_packages, status } = req.body;
 
-    if (total_packages === undefined || total_packages < 0) {
-        return res.status(400).json({ message: 'Invalid total packages' });
+    const updates = {};
+    if (total_packages !== undefined) {
+        updates.total_packages = total_packages;
+        updates.packages_added_by = req.user.username;
+    }
+    if (status) {
+        updates.status = status;
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: 'No fields to update' });
     }
 
     try {
         const { data, error } = await supabase
             .from('remitos')
-            .update({
-                total_packages,
-                packages_added_by: req.user.username
-            })
+            .update(updates)
             .eq('id', id)
             .select();
 
@@ -162,7 +168,7 @@ app.patch('/api/remitos/:id/packages', verifyToken, async (req, res) => {
 
         res.json(data[0]);
     } catch (error) {
-        console.error('Error updating packages:', error);
+        console.error('Error updating remito:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
