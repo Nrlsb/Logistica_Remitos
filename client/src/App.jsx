@@ -6,6 +6,7 @@ import RemitoList from './components/RemitoList';
 import Login from './components/Login';
 import Register from './components/Register';
 import DiscrepancyList from './components/DiscrepancyList';
+import AchiqueList from './components/AchiqueList';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children, role }) => {
@@ -55,6 +56,11 @@ const AppContent = () => {
             <Route path="/list" element={
               <ProtectedRoute>
                 <RemitoList />
+              </ProtectedRoute>
+            } />
+            <Route path="/achique" element={
+              <ProtectedRoute>
+                <AchiqueList />
               </ProtectedRoute>
             } />
             <Route path="/discrepancies" element={

@@ -139,6 +139,34 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
     }
 });
 
+// Update remito packages
+app.patch('/api/remitos/:id/packages', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { total_packages } = req.body;
+
+    if (total_packages === undefined || total_packages < 0) {
+        return res.status(400).json({ message: 'Invalid total packages' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('remitos')
+            .update({
+                total_packages,
+                packages_added_by: req.user.username
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        res.json(data[0]);
+    } catch (error) {
+        console.error('Error updating packages:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Get all remitos with manual join to pre-remitos/PV
 app.get('/api/remitos', verifyToken, async (req, res) => {
     try {

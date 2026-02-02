@@ -224,6 +224,11 @@ const RemitoForm = () => {
             }
         }
 
+        if (!clarificationText.trim()) {
+            triggerModal('Atención', 'Debe ingresar una aclaración o motivo para continuar.', 'warning');
+            return;
+        }
+
         // Enrich discrepancies with reasons
         const enrichedDiscrepancies = {
             ...pendingDiscrepancies,
@@ -550,7 +555,7 @@ const RemitoForm = () => {
                             )}
 
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Aclaración / Motivo
+                                Aclaración / Motivo <span className="text-red-600">*</span>
                             </label>
                             <textarea
                                 value={clarificationText}

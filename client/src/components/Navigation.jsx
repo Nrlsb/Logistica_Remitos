@@ -44,6 +44,7 @@ const Navigation = () => {
                     {(user?.role === 'admin' || user?.role !== 'supervisor') && (
                         <Link to="/" className={getLinkClass('/')}>Nuevo Pedido de Venta</Link>
                     )}
+                    <Link to="/achique" className={getLinkClass('/achique')}>Achique</Link>
                     {(user?.role === 'admin' || user?.role === 'supervisor') && (
                         <Link to="/list" className={getLinkClass('/list')}>Historial</Link>
                     )}
@@ -87,6 +88,7 @@ const Navigation = () => {
                         {(user?.role === 'admin' || user?.role !== 'supervisor') && (
                             <Link to="/" className={getMobileLinkClass('/')} onClick={() => setIsOpen(false)}>Nuevo Pedido de Venta</Link>
                         )}
+                        <Link to="/achique" className={getMobileLinkClass('/achique')} onClick={() => setIsOpen(false)}>Achique</Link>
                         {(user?.role === 'admin' || user?.role === 'supervisor') && (
                             <Link to="/list" className={getMobileLinkClass('/list')} onClick={() => setIsOpen(false)}>Historial</Link>
                         )}
