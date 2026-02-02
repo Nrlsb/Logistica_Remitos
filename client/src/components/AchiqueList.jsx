@@ -115,28 +115,28 @@ const AchiqueList = () => {
         for (let i = 1; i <= quantity; i++) {
             if (i > 1) doc.addPage();
 
+            doc.setFontSize(10);
+            doc.text(`${new Date().toLocaleDateString()}`, 75, 10, { align: 'center' });
+
             doc.setFontSize(40);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${i} de ${quantity}`, 75, 50, { align: 'center' });
+            doc.text(`${i} de ${quantity}`, 75, 40, { align: 'center' }); // Moved up from 50
 
             doc.setFontSize(16);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pre-remito: ${remito.remito_number}`, 75, 70, { align: 'center' });
+            doc.text(`Pre-remito: ${remito.remito_number}`, 75, 60, { align: 'center' }); // Moved up from 70
 
             if (remito.numero_pv) {
-                doc.text(`PV: ${remito.numero_pv}`, 75, 80, { align: 'center' });
+                doc.text(`PV: ${remito.numero_pv}`, 75, 70, { align: 'center' }); // Moved up from 80
             }
             if (remito.sucursal) {
-                doc.text(`Sucursal: ${remito.sucursal}`, 75, 90, { align: 'center' });
+                doc.text(`Sucursal: ${remito.sucursal}`, 75, 80, { align: 'center' }); // Moved up from 90
             }
 
             if (remito.packages_added_by) {
                 doc.setFontSize(12);
-                doc.text(`Achicado por: ${remito.packages_added_by}`, 75, 105, { align: 'center' });
+                doc.text(`Achicado por: ${remito.packages_added_by}`, 75, 95, { align: 'center' }); // Moved up from 105 to 95 (fits in 100mm)
             }
-
-            doc.setFontSize(10);
-            doc.text(`${new Date().toLocaleDateString()}`, 75, 10, { align: 'center' });
         }
 
         // Save
