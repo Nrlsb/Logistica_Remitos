@@ -526,6 +526,66 @@ app.get('/api/auth/user', verifyToken, async (req, res) => {
     }
 });
 
+// Admin Routes for User Management
+
+// Get all users (Admin only)
+app.get('/api/users', verifyToken, async (req, res) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    try {
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('id, username, role, created_at, tasks')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Ensure tasks is an array if null
+        const formattedUsers = users.map(user => ({
+            ...user,
+            tasks: user.tasks || []
+        }));
+
+        res.json(formattedUsers);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Update user tasks (Admin only)
+app.patch('/api/users/:id/tasks', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { tasks } = req.body;
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    if (!Array.isArray(tasks)) {
+        return res.status(400).json({ message: 'Tasks must be an array' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ tasks: tasks })
+            .eq('id', id)
+            .select('id, username, role, tasks');
+
+        if (error) throw error;
+
+        res.json(data[0]);
+    } catch (error) {
+        console.error('Error updating user tasks:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // The catch-all handler must be at the end, after all other routes
 app.get(/(.*)/, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));

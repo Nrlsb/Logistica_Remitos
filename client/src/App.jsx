@@ -20,6 +20,8 @@ const ProtectedRoute = ({ children, role }) => {
 import Navigation from './components/Navigation';
 
 import Modal from './components/Modal';
+import ManageUsers from './components/ManageUsers';
+
 
 const RoleBasedHome = () => {
   const { user } = useAuth();
@@ -68,6 +70,12 @@ const AppContent = () => {
                 <DiscrepancyList />
               </ProtectedRoute>
             } />
+            <Route path="/users" element={
+              <ProtectedRoute role="admin">
+                <ManageUsers />
+              </ProtectedRoute>
+            } />
+
           </Routes>
         </main>
       </div>
