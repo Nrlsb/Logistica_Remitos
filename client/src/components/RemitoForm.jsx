@@ -17,6 +17,10 @@ const RemitoForm = () => {
     const [expectedItems, setExpectedItems] = useState(null); // null = no pre-remito loaded
     const [preRemitoStatus, setPreRemitoStatus] = useState(''); // 'loading', 'found', 'not_found', 'error'
 
+    // Preparer State
+    const [preparersList, setPreparersList] = useState([]);
+    const [selectedPreparer, setSelectedPreparer] = useState('');
+
     // Manual Autocomplete State
     const [manualSuggestions, setManualSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -69,9 +73,10 @@ const RemitoForm = () => {
         expectedItemsRef.current = expectedItems;
     }, [expectedItems]);
 
-    // Fetch pre-remitos list on mount
+    // Fetch pre-remitos and preparers list on mount
     useEffect(() => {
-        const fetchPreRemitos = async () => {
+        const fetchInitialData = async () => {
+            // Fetch Pre-Remitos
             try {
                 const response = await api.get('/api/pre-remitos');
                 if (Array.isArray(response.data)) {
@@ -84,8 +89,18 @@ const RemitoForm = () => {
                 console.error('Error fetching pre-remitos list:', error);
                 setPreRemitoList([]);
             }
+
+            // Fetch Preparers
+            try {
+                const response = await api.get('/api/public/preparers');
+                if (Array.isArray(response.data)) {
+                    setPreparersList(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching preparers:', error);
+            }
         };
-        fetchPreRemitos();
+        fetchInitialData();
     }, []);
 
     const handleLoadPreRemito = async () => {
@@ -161,6 +176,12 @@ const RemitoForm = () => {
     };
 
     const handleSubmitRemito = async () => {
+        // Validate Preparer Selection
+        if (!selectedPreparer) {
+            triggerModal('Atención', 'Debe seleccionar quién preparó el pedido antes de finalizar.', 'warning');
+            return;
+        }
+
         // Calculate Discrepancies
         let discrepancies = { missing: [], extra: [] };
 
@@ -253,7 +274,8 @@ const RemitoForm = () => {
                 remitoNumber,
                 items,
                 discrepancies,
-                clarification
+                clarification,
+                preparedBy: selectedPreparer // Send selected preparer
             });
 
             console.log('Remito submitted:', response.data);
@@ -265,6 +287,7 @@ const RemitoForm = () => {
             setExpectedItems(null);
             setPreRemitoNumber('');
             setPreRemitoStatus('');
+            setSelectedPreparer(''); // Reset preparer
         } catch (error) {
             console.error('Error submitting remito:', error);
             triggerModal('Error', 'Error al guardar el remito', 'error');
@@ -638,19 +661,36 @@ const RemitoForm = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-brand-gray mb-2">O subir PDF de Remito</label>
-                        <input
-                            type="file"
-                            accept=".pdf"
-                            onChange={handleFileUpload}
-                            className="block w-full text-sm text-brand-gray
-                                file:mr-4 file:py-3 file:px-4
-                                file:rounded-lg file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-blue-50 file:text-brand-blue
-                                hover:file:bg-blue-100 transition cursor-pointer h-12 pt-1.5"
-                        />
+                        <label className="block text-sm font-medium text-brand-gray mb-2">Preparado por <span className="text-red-500">*</span></label>
+                        <select
+                            value={selectedPreparer}
+                            onChange={(e) => setSelectedPreparer(e.target.value)}
+                            className={`block w-full h-12 p-3 border rounded-lg focus:ring-2 focus:ring-brand-blue transition shadow-sm text-base bg-white ${!selectedPreparer && expectedItems ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'}`}
+                        >
+                            <option value="">Seleccione el preparador...</option>
+                            {preparersList.map((p) => (
+                                <option key={p.user_code || p.username} value={p.user_code || p.username}>
+                                    {p.user_code ? `${p.username} (${p.user_code})` : p.username}
+                                </option>
+                            ))}
+                        </select>
                     </div>
+                </div>
+
+                {/* PDF Upload Row */}
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-brand-gray mb-2">O subir PDF de Remito</label>
+                    <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                        className="block w-full md:w-1/2 text-sm text-brand-gray
+                             file:mr-4 file:py-3 file:px-4
+                             file:rounded-lg file:border-0
+                             file:text-sm file:font-semibold
+                             file:bg-blue-50 file:text-brand-blue
+                             hover:file:bg-blue-100 transition cursor-pointer h-12 pt-1.5"
+                    />
                 </div>
 
                 {preRemitoStatus === 'found' && (

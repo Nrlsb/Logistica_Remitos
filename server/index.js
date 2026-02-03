@@ -100,9 +100,33 @@ app.get('/api/products/:barcode', verifyToken, async (req, res) => {
     }
 });
 
+// Get all preparers (Public/Authenticated)
+app.get('/api/public/preparers', verifyToken, async (req, res) => {
+    try {
+        // Fetch all users and filter in memory since JSONB/Array filtering in Supabase via JS client can be tricky depending on structure
+        // Or better, just fetch all users tasks and filter.
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('username, user_code, tasks')
+            .order('username');
+
+        if (error) throw error;
+
+        // Filter users who have 'Preparador' in their tasks array
+        const preparers = users.filter(user =>
+            Array.isArray(user.tasks) && user.tasks.includes('Preparador')
+        );
+
+        res.json(preparers);
+    } catch (error) {
+        console.error('Error fetching preparers:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Create new remito
 app.post('/api/remitos', verifyToken, async (req, res) => {
-    const { remitoNumber, items, discrepancies, clarification } = req.body;
+    const { remitoNumber, items, discrepancies, clarification, preparedBy } = req.body;
 
     if (!remitoNumber || !items || items.length === 0) {
         return res.status(400).json({ message: 'Missing remito number or items' });
@@ -118,7 +142,8 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
                     discrepancies: discrepancies || {}, // Save discrepancies if provided
                     clarification: clarification || null,
                     status: 'scanned', // Initial status
-                    created_by: req.user.username // Save the username from the token
+                    created_by: req.user.username, // Save the username from the token
+                    prepared_by: preparedBy || null // Save the preparer
                 }
             ])
             .select();
@@ -582,6 +607,73 @@ app.patch('/api/users/:id/tasks', verifyToken, async (req, res) => {
         res.json(data[0]);
     } catch (error) {
         console.error('Error updating user tasks:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Create new user (Admin only)
+app.post('/api/admin/users', verifyToken, async (req, res) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const { username, password, user_code, role } = req.body;
+
+    // Basic validation
+    if (!username || !password || !user_code || !role) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate user_code (must be exactly 3 digits)
+    if (!/^\d{3}$/.test(user_code)) {
+        return res.status(400).json({ message: 'User code must be exactly 3 digits' });
+    }
+
+    try {
+        // Check if username already exists
+        const { data: existingUser, error: searchError } = await supabase
+            .from('users')
+            .select('id')
+            .or(`username.eq.${username},user_code.eq.${user_code}`)
+            .maybeSingle();
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username or User Code already exists' });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Generate Session ID
+        const sessionId = uuidv4();
+
+        // Create user
+        const { data, error } = await supabase
+            .from('users')
+            .insert([
+                {
+                    username,
+                    password: hashedPassword,
+                    user_code,
+                    role,
+                    current_session_id: sessionId,
+                    tasks: [] // Initialize empty tasks
+                }
+            ])
+            .select('id, username, role, user_code, created_at');
+
+        if (error) {
+            if (error.code === '23505') { // Unique violation fallback
+                return res.status(400).json({ message: 'Username or User Code already exists' });
+            }
+            throw error;
+        }
+
+        res.status(201).json(data[0]);
+    } catch (error) {
+        console.error('Error creating user:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
