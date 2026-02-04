@@ -113,7 +113,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await api.post('/api/auth/logout');
+        } catch (error) {
+            console.error('Logout failed on server', error);
+        }
         localStorage.removeItem('token');
         setUser(null);
         setIsAuthenticated(false);

@@ -586,6 +586,22 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Logout
+app.post('/api/auth/logout', verifyToken, async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('users')
+            .update({ current_session_id: null })
+            .eq('id', req.user.id);
+
+        if (error) throw error;
+        res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Error logging out:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Example protected route
 app.get('/api/auth/user', verifyToken, async (req, res) => {
     try {
