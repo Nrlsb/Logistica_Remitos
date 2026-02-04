@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import Fuse from 'fuse.js';
 import { useAuth } from '../context/AuthContext';
+import logoUrl from '../assets/logo.png';
 
 const AchiqueList = () => {
     const { user } = useAuth();
@@ -77,7 +78,7 @@ const AchiqueList = () => {
                 ...responsePacked.data,
                 packages_added_by: responsePacked.data.packages_added_by || user?.username || 'Usuario'
             };
-            generateLabelsPDF(updatedRemito, qty);
+            await generateLabelsPDF(updatedRemito, qty);
 
             // 3. Update backend (Finalized state) - Assuming print process initiated
             const responseFinalized = await api.patch(`/api/remitos/${selectedRemito.id}`, {
@@ -101,42 +102,88 @@ const AchiqueList = () => {
         }
     };
 
-    const generateLabelsPDF = (remito, quantity) => {
+    const generateLabelsPDF = async (remito, quantity) => {
         const doc = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
-            format: [100, 150] // Custom label size roughly 10x15cm, adjustable
+            format: [100, 150] // Custom label size roughly 10x15cm
         });
 
-        // If standard A4 is preferred with multiple labels, logic changes.
-        // Assuming individual label prints for thermal printers or just one page per label.
-        // Or 1 page per label in a single PDF.
+        const loadImage = (url) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(img);
+                img.onerror = (e) => reject(e);
+            });
+        };
+
+        let logoImg = null;
+        try {
+            logoImg = await loadImage(logoUrl);
+        } catch (e) {
+            console.error("Could not load logo", e);
+        }
 
         for (let i = 1; i <= quantity; i++) {
             if (i > 1) doc.addPage();
 
+            // Config
+            const xCenter = 75; // 150mm width / 2
+
+            if (logoImg) {
+                doc.addImage(logoImg, 'PNG', 5, 5, 25, 12);
+            }
+
+            // 1. Title/Date (Top Right)
+            doc.setFontSize(8);
+            doc.text(`${new Date().toLocaleDateString()}`, 140, 10, { align: 'right' });
+
+            // 2. Pre-Remito
             doc.setFontSize(10);
-            doc.text(`${new Date().toLocaleDateString()}`, 75, 10, { align: 'center' });
-
-            doc.setFontSize(40);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${i} de ${quantity}`, 75, 40, { align: 'center' }); // Moved up from 50
-
+            doc.text(`Nº Pre-Remito:`, xCenter, 15, { align: 'center' }); // Compacted
             doc.setFontSize(16);
+            doc.text(`${remito.remito_number}`, xCenter, 22, { align: 'center' });
+
+            // 3. Cliente ID
+            doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Pre-remito: ${remito.remito_number}`, 75, 60, { align: 'center' }); // Moved up from 70
+            doc.text(`Nº Cliente:`, xCenter, 30, { align: 'center' });
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${remito.cliente_codigo || '-'}`, xCenter, 36, { align: 'center' });
 
-            if (remito.numero_pv) {
-                doc.text(`PV: ${remito.numero_pv}`, 75, 70, { align: 'center' }); // Moved up from 80
-            }
-            if (remito.sucursal) {
-                doc.text(`Sucursal: ${remito.sucursal}`, 75, 80, { align: 'center' }); // Moved up from 90
-            }
+            // 4. Nombre Cliente
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Nombre Cliente:`, xCenter, 44, { align: 'center' });
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            // Split text if too long
+            const splitName = doc.splitTextToSize(remito.cliente_nombre || '-', 130);
+            doc.text(splitName, xCenter, 50, { align: 'center' });
 
-            if (remito.packages_added_by) {
-                doc.setFontSize(12);
-                doc.text(`Achicado por: ${remito.packages_added_by}`, 75, 95, { align: 'center' }); // Moved up from 105 to 95 (fits in 100mm)
-            }
+            // 5. Bultos (Big)
+            // Calculate Y position based on name length
+            const bultoY = 68 + (splitName.length * 8) + 10;
+
+            // 5. Bultos (Massive)
+            // Label
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`BULTOS`, xCenter, 65, { align: 'center' });
+
+            // Number
+            doc.setFontSize(70); // HUGE
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 0, 0);
+            doc.text(`${i} / ${quantity}`, xCenter, 85, { align: 'center' });
+
+            // Footer (Achicado por)
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Operador: ${remito.packages_added_by}`, xCenter, 96, { align: 'center' });
         }
 
         // Save
