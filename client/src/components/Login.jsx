@@ -3,17 +3,24 @@ import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
+import Modal from './Modal';
+
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    // const [error, setError] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // setError(''); // No longer needed
         const result = await login(username, password);
+
+        if (result.requiresConfirmation) {
+            setShowConfirmModal(true);
+            return;
+        }
+
         if (result.success) {
             toast.success('Bienvenido!');
             navigate('/');
@@ -22,8 +29,29 @@ const Login = () => {
         }
     };
 
+    const handleForceLogin = async () => {
+        const result = await login(username, password, true); // Force login
+        setShowConfirmModal(false);
+        if (result.success) {
+            toast.success('Sesión iniciada correctamente.');
+            navigate('/');
+        } else {
+            toast.error(result.message);
+        }
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-brand-bg p-4">
+            <Modal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                title="Sesión Activa"
+                message="Ya existe una sesión activa con este usuario en otro dispositivo. ¿Deseas cerrar la otra sesión e ingresar aquí?"
+                type="warning"
+                onConfirm={handleForceLogin}
+                confirmText="Sí, ingresar"
+                cancelText="Cancelar"
+            />
             <div className="bg-white p-10 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
                 <div className="text-center mb-8">
                     <div className="mx-auto h-24 w-24 flex items-center justify-center mb-4">
@@ -32,9 +60,7 @@ const Login = () => {
                     <h2 className="text-3xl font-bold text-brand-dark tracking-tight">Bienvenido</h2>
                     <p className="text-brand-gray mt-2">Ingresa tus credenciales para continuar</p>
                 </div>
-
                 {/* Error handling moved to Toast */}
-
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-brand-dark mb-2" htmlFor="username">
@@ -74,7 +100,6 @@ const Login = () => {
                             />
                         </div>
                     </div>
-
                     <button
                         type="submit"
                         className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-brand-blue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue transition transform hover:-translate-y-0.5"
@@ -82,7 +107,6 @@ const Login = () => {
                         Ingresar
                     </button>
                 </form>
-
                 <div className="mt-8 text-center border-t border-gray-100 pt-6">
                     <p className="text-sm text-brand-gray">
                         ¿No tienes cuenta?{' '}

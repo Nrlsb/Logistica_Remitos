@@ -59,18 +59,18 @@ const verifyToken = async (req, res, next) => {
             .single();
 
         if (error || !user) {
-            return res.status(401).json({ message: 'User not found' });
+            return res.status(401).json({ message: 'Usuario no encontrado' });
         }
 
         if (user.current_session_id !== decoded.session_id) {
-            return res.status(401).json({ message: 'Session expired or invalid (logged in elsewhere)' });
+            return res.status(401).json({ message: 'Tu sesión ha sido cerrada porque se inició sesión en otro dispositivo.' });
         }
 
         req.user = decoded;
         next();
     } catch (e) {
         console.error('Token verification error:', e.message);
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(401).json({ message: 'Token no válido' });
     }
 };
 
@@ -530,7 +530,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 // Login
 app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, force } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
@@ -552,6 +552,13 @@ app.post('/api/auth/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Check if session exists (and we act responsibly to block it unless forced)
+        // If user.current_session_id is present, it means there is an active session presumably.
+        // We can't know for sure if it's "active" (user might have closed tab), but for security/mutex we assume yes.
+        if (user.current_session_id && !force) {
+            return res.status(409).json({ message: 'Ya existe una sesión activa en otro dispositivo.' });
         }
 
         // Generate New Session ID

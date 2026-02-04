@@ -32,7 +32,7 @@ const RoleBasedHome = () => {
 };
 
 const AppContent = () => {
-  const { sessionExpired, closeSessionExpiredModal } = useAuth();
+  const { sessionExpired, closeSessionExpiredModal, sessionError } = useAuth();
 
   return (
     <>
@@ -40,8 +40,8 @@ const AppContent = () => {
       <Modal
         isOpen={sessionExpired}
         onClose={closeSessionExpiredModal}
-        title="Sesión Cerrada"
-        message="Tu sesión ha sido cerrada porque has iniciado sesión en otro dispositivo."
+        title="Sesión Finalizada"
+        message={sessionError || "Tu sesión ha sido cerrada."}
         type="warning"
       />
       <div className="min-h-screen bg-gray-100 font-sans text-gray-900">

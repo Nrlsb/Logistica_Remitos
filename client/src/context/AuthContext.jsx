@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import api from '../api'; // Use the api instance
+import api from '../api';
 
 const AuthContext = createContext();
 
@@ -10,40 +10,59 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [sessionExpired, setSessionExpired] = useState(false);
+    const [sessionError, setSessionError] = useState('');
 
-    useEffect(() => {
-        const checkLoggedIn = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    // Verify token with backend
-                    const res = await api.get('/api/auth/user');
-                    setUser(res.data);
-                    setIsAuthenticated(true);
-                } catch (error) {
-                    // If token is invalid or session expired (401), clear it
-                    console.log('Session check failed:', error.response?.data?.message);
-                    localStorage.removeItem('token');
-                    setUser(null);
-                    setIsAuthenticated(false);
-                    // If it was a 401, the interceptor might have already fired, 
-                    // or we can fire it manually if we want the modal to show on load.
-                    // But usually on load we just want to redirect to login silently if session is invalid.
-                    // So we might NOT want to show the modal on initial load, only on active usage.
-                }
+    const checkLoggedIn = async () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // Verify token with backend
+                const res = await api.get('/api/auth/user');
+                setUser(res.data);
+                setIsAuthenticated(true);
+            } catch (error) {
+                // If token is invalid or session expired (401), clear it
+                console.log('Session check failed:', error.response?.data?.message);
+                localStorage.removeItem('token');
+                setUser(null);
+                setIsAuthenticated(false);
             }
-            setLoading(false);
+        }
+        setLoading(false);
+    };
+
+    // Polling to validate session while authenticated
+    useEffect(() => {
+        let intervalId;
+
+        const validateSession = async () => {
+            if (!isAuthenticated) return;
+            try {
+                // We use the same endpoint but primarily to check if 401 occurs
+                await api.get('/api/auth/user');
+            } catch (error) {
+                // 401s are handled by the interceptor mostly, but if it fails silently we catch here
+                // Note: The interceptor will fire 'auth:session-expired' which handles the UI
+            }
         };
 
+        if (isAuthenticated) {
+            intervalId = setInterval(validateSession, 30000); // Poll every 30 seconds
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [isAuthenticated]);
+
+    useEffect(() => {
         checkLoggedIn();
 
         // Listen for session expiration event from api interceptor
-        const handleSessionExpired = () => {
+        const handleSessionExpired = (event) => {
+            const message = event.detail || 'Tu sesión ha expirado.';
+            setSessionError(message);
             setSessionExpired(true);
-            // We don't immediately logout here to allow the modal to show "You have been logged out"
-            // But actually we SHOULD logout state so the UI updates behind the modal?
-            // Or keep the state until user clicks OK?
-            // Let's keep state until user clicks OK in the modal.
         };
 
         window.addEventListener('auth:session-expired', handleSessionExpired);
@@ -53,18 +72,26 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    const login = async (username, password) => {
+    const login = async (username, password, force = false) => {
         try {
-            const res = await api.post('/api/auth/login', { username, password });
+            const res = await api.post('/api/auth/login', { username, password, force });
             localStorage.setItem('token', res.data.token);
             setUser(res.data.user);
             setIsAuthenticated(true);
             setSessionExpired(false);
+            setSessionError('');
             return { success: true };
         } catch (error) {
+            if (error.response && error.response.status === 409) {
+                return {
+                    success: false,
+                    requiresConfirmation: true,
+                    message: error.response.data.message
+                };
+            }
             return {
                 success: false,
-                message: error.response?.data?.message || 'Login failed'
+                message: error.response?.data?.message || 'Error al iniciar sesión'
             };
         }
     };
@@ -76,11 +103,12 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data.user);
             setIsAuthenticated(true);
             setSessionExpired(false);
+            setSessionError('');
             return { success: true };
         } catch (error) {
             return {
                 success: false,
-                message: error.response?.data?.message || 'Registration failed'
+                message: error.response?.data?.message || 'Error al registrarse'
             };
         }
     };
@@ -90,6 +118,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
         setSessionExpired(false);
+        setSessionError('');
     };
 
     const closeSessionExpiredModal = () => {
@@ -98,7 +127,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isAuthenticated, login, register, logout, sessionExpired, closeSessionExpiredModal }}>
+        <AuthContext.Provider value={{ user, loading, isAuthenticated, login, register, logout, sessionExpired, sessionError, closeSessionExpiredModal }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Modal = ({ isOpen, onClose, title, message, type = 'info' }) => {
+const Modal = ({ isOpen, onClose, title, message, type = 'info', onConfirm, confirmText, cancelText }) => {
     if (!isOpen) return null;
 
     const typeStyles = {
@@ -33,13 +33,30 @@ const Modal = ({ isOpen, onClose, title, message, type = 'info' }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className={`px-4 py-2 text-white font-semibold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonStyles[type]}`}
-                    >
-                        Entendido
-                    </button>
+                <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                    {onConfirm ? (
+                        <>
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-gray-700 font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition"
+                            >
+                                {cancelText || 'Cancelar'}
+                            </button>
+                            <button
+                                onClick={onConfirm}
+                                className={`px-4 py-2 text-white font-semibold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonStyles[type]}`}
+                            >
+                                {confirmText || 'Confirmar'}
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={onClose}
+                            className={`px-4 py-2 text-white font-semibold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonStyles[type]}`}
+                        >
+                            Entendido
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
