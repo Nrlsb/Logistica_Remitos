@@ -103,15 +103,15 @@ const RemitoForm = () => {
         fetchInitialData();
     }, []);
 
-    const handleLoadPreRemito = async () => {
-        if (!preRemitoNumber) return;
+    const handleLoadPreRemito = async (selectedNumber = preRemitoNumber) => {
+        if (!selectedNumber) return;
         setPreRemitoStatus('loading');
         try {
-            const response = await api.get(`/api/pre-remitos/${preRemitoNumber}`);
+            const response = await api.get(`/api/pre-remitos/${selectedNumber}`);
             setExpectedItems(response.data.items); // items now contain { code, barcode, quantity, description } from DB
             setPreRemitoStatus('found');
             // Auto-fill remito number with the order number
-            setRemitoNumber(preRemitoNumber);
+            setRemitoNumber(selectedNumber);
         } catch (error) {
             console.error('Error loading pre-remito:', error);
             setPreRemitoStatus('not_found');
@@ -635,28 +635,22 @@ const RemitoForm = () => {
                         <div className="flex flex-col md:flex-row gap-3">
                             <select
                                 value={preRemitoNumber}
-                                onChange={(e) => setPreRemitoNumber(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setPreRemitoNumber(val);
+                                    if (val) handleLoadPreRemito(val);
+                                }}
                                 className="flex-1 h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-base bg-white"
                             >
                                 <option value="">Seleccione un pedido...</option>
                                 {Array.isArray(preRemitoList) && preRemitoList.map((pre) => (
                                     <option key={pre.id} value={pre.order_number}>
                                         {pre.numero_pv
-                                            ? `PV: ${pre.numero_pv} - Suc: ${pre.sucursal}`
+                                            ? `PV: ${pre.numero_pv} - Cliente: ${pre.cliente_nombre || '-'} (${pre.cliente_codigo || '-'})`
                                             : `Pre-Remito #${pre.order_number} (${new Date(pre.created_at).toLocaleDateString()})`}
                                     </option>
                                 ))}
                             </select>
-                            <button
-                                onClick={handleLoadPreRemito}
-                                disabled={!preRemitoNumber}
-                                className={`h-12 w-full md:w-auto px-6 rounded-lg transition font-medium shadow-sm flex items-center justify-center ${!preRemitoNumber
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-brand-blue text-white hover:bg-blue-800'
-                                    }`}
-                            >
-                                Cargar
-                            </button>
                         </div>
                     </div>
 
@@ -678,6 +672,7 @@ const RemitoForm = () => {
                 </div>
 
                 {/* PDF Upload Row */}
+                {/* PDF Upload Row Hidden
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-brand-gray mb-2">O subir PDF de Remito</label>
                     <input
@@ -692,6 +687,7 @@ const RemitoForm = () => {
                              hover:file:bg-blue-100 transition cursor-pointer h-12 pt-1.5"
                     />
                 </div>
+                */}
 
                 {preRemitoStatus === 'found' && (
                     <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
@@ -702,7 +698,7 @@ const RemitoForm = () => {
                         </div>
                         {/* Show extra info if available */}
                         {(() => {
-                            const selectedPre = preRemitoList.find(p => p.order_number === preRemitoNumber);
+                            const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
                             if (selectedPre && selectedPre.numero_pv) {
                                 return (
                                     <div className="ml-7 text-sm grid grid-cols-2 gap-4">
@@ -711,8 +707,8 @@ const RemitoForm = () => {
                                             <span className="ml-1">{selectedPre.numero_pv}</span>
                                         </div>
                                         <div>
-                                            <span className="font-semibold text-green-700">Sucursal:</span>
-                                            <span className="ml-1">{selectedPre.sucursal}</span>
+                                            <span className="font-semibold text-green-700">Cliente:</span>
+                                            <span className="ml-1">{selectedPre.cliente_nombre || '-'} ({selectedPre.cliente_codigo || '-'})</span>
                                         </div>
                                         <div>
                                             <span className="font-semibold text-green-700">Pre-Remito:</span>

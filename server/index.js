@@ -274,7 +274,9 @@ app.get('/api/pre-remitos', verifyToken, async (req, res) => {
                 created_at,
                 pedidos_ventas (
                     numero_pv,
-                    cliente_tienda
+                    cliente_tienda,
+                    cliente_codigo,
+                    cliente_nombre
                 )
             `)
             .neq('status', 'processed') // Filter out processed orders
@@ -286,7 +288,9 @@ app.get('/api/pre-remitos', verifyToken, async (req, res) => {
         const formattedData = data.map(item => ({
             ...item,
             numero_pv: item.pedidos_ventas?.[0]?.numero_pv || null,
-            sucursal: item.pedidos_ventas?.[0]?.cliente_tienda || null // Map DB cliente_tienda to frontend sucursal
+            sucursal: item.pedidos_ventas?.[0]?.cliente_tienda || null, // Map DB cliente_tienda to frontend sucursal
+            cliente_codigo: item.pedidos_ventas?.[0]?.cliente_codigo || null,
+            cliente_nombre: item.pedidos_ventas?.[0]?.cliente_nombre || null
         }));
 
         res.json(formattedData);
@@ -306,7 +310,9 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
                 *,
                 pedidos_ventas (
                     numero_pv,
-                    cliente_tienda
+                    cliente_tienda,
+                    cliente_codigo,
+                    cliente_nombre
                 )
             `)
             .eq('order_number', orderNumber)
@@ -324,6 +330,8 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
             ...data,
             numero_pv: data.pedidos_ventas?.[0]?.numero_pv || null,
             sucursal: data.pedidos_ventas?.[0]?.cliente_tienda || null, // Map DB cliente_tienda to frontend sucursal
+            cliente_codigo: data.pedidos_ventas?.[0]?.cliente_codigo || null,
+            cliente_nombre: data.pedidos_ventas?.[0]?.cliente_nombre || null,
             pedidos_ventas: undefined // Remove the array
         };
 

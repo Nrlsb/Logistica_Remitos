@@ -228,7 +228,7 @@ const AchiqueList = () => {
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold">
                                 <th className="px-6 py-4">Fecha</th>
                                 <th className="px-6 py-4">Pre-remito / Remito</th>
-                                <th className="px-6 py-4">PV / Sucursal</th>
+                                <th className="px-6 py-4">PV / Cliente</th>
                                 <th className="px-6 py-4 text-center">Items</th>
                                 <th className="px-6 py-4 text-center">Bultos</th>
                                 <th className="px-6 py-4 text-right">Acciones</th>
@@ -256,7 +256,7 @@ const AchiqueList = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-medium text-gray-900">{remito.numero_pv || '-'}</span>
-                                                <span className="text-xs text-gray-500">Suc: {remito.sucursal || '-'}</span>
+                                                <span className="text-xs text-gray-500">Cliente: {remito.cliente_nombre || '-'} ({remito.cliente_codigo || '-'})</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
