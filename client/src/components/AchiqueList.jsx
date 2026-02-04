@@ -180,10 +180,6 @@ const AchiqueList = () => {
             doc.setTextColor(0, 0, 0);
             doc.text(`${i} / ${quantity}`, xCenter, 85, { align: 'center' });
 
-            // Footer (Achicado por)
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Operador: ${remito.packages_added_by}`, xCenter, 96, { align: 'center' });
         }
 
         // Save
