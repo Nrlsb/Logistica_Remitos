@@ -19,19 +19,27 @@ const Scanner = ({ onScan }) => {
                 "reader",
                 {
                     fps: 20,
+                    // No usamos qrbox fijo para que use todo el frame si es posible,
+                    // o usamos uno muy grande para no restringir la detección a distancia.
                     qrbox: (viewfinderWidth, viewfinderHeight) => {
-                        // Un área más ancha y menos alta es mejor para códigos de barras
-                        // y permite capturar desde más lejos al tener más contexto horizontal
-                        const width = Math.min(viewfinderWidth * 0.8, 300);
-                        const height = Math.min(viewfinderHeight * 0.4, 150);
-                        return { width, height };
+                        return {
+                            width: viewfinderWidth * 0.9,
+                            height: viewfinderHeight * 0.9
+                        };
                     },
-                    aspectRatio: 1.0,
-                    showTorchButtonIfSupported: true, // Útil si hay poca luz
+                    aspectRatio: 1.333334, // Ratio 4:3 común en cámaras móviles
+                    showTorchButtonIfSupported: true,
+                    rememberLastUsedCamera: true,
+                    experimentalFeatures: {
+                        useBarCodeDetectorIfSupported: true // USA EL API NATIVA (MUCHO MÁS RÁPIDA)
+                    },
                     videoConstraints: {
                         facingMode: "environment",
-                        width: { min: 640, ideal: 1280, max: 1920 },
-                        height: { min: 480, ideal: 720, max: 1080 }
+                        // Forzamos resolución alta para que los palitos del código sean legibles desde lejos
+                        width: { min: 1280, ideal: 1920 },
+                        height: { min: 720, ideal: 1080 },
+                        // Intentamos activar el enfoque automático si el navegador lo permite
+                        focusMode: "continuous"
                     }
                 },
                 /* verbose= */ false
