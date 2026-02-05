@@ -63,6 +63,11 @@ const verifyToken = async (req, res, next) => {
         }
 
         if (user.current_session_id !== decoded.session_id) {
+            // Clear flag if session is invalid
+            await supabase
+                .from('users')
+                .update({ is_session_active: false })
+                .eq('id', decoded.id);
             return res.status(401).json({ message: 'Tu sesión ha sido cerrada porque se inició sesión en otro dispositivo.' });
         }
 
@@ -70,6 +75,8 @@ const verifyToken = async (req, res, next) => {
         next();
     } catch (e) {
         console.error('Token verification error:', e.message);
+        // If token is expired, we should ideally clear the flag, but we need the user ID
+        // This is complex without decoding an expired token manually, so we'll focus on logouts and explicit checks.
         res.status(401).json({ message: 'Token no válido' });
     }
 };
@@ -507,6 +514,7 @@ app.post('/api/auth/register', async (req, res) => {
                     username,
                     password: hashedPassword,
                     current_session_id: sessionId,
+                    is_session_active: true,
                     role: 'user' // Default role
                 }
             ])
@@ -564,10 +572,13 @@ app.post('/api/auth/login', async (req, res) => {
         // Generate New Session ID
         const sessionId = uuidv4();
 
-        // Update user with new session ID
+        // Update user with new session ID and active flag
         const { error: updateError } = await supabase
             .from('users')
-            .update({ current_session_id: sessionId })
+            .update({
+                current_session_id: sessionId,
+                is_session_active: true
+            })
             .eq('id', user.id);
 
         if (updateError) throw updateError;
@@ -591,7 +602,10 @@ app.post('/api/auth/logout', verifyToken, async (req, res) => {
     try {
         const { error } = await supabase
             .from('users')
-            .update({ current_session_id: null })
+            .update({
+                current_session_id: null,
+                is_session_active: false
+            })
             .eq('id', req.user.id);
 
         if (error) throw error;
