@@ -1,10 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-const Scanner = ({ onScan }) => {
+const Scanner = ({ onScan, isEnabled = true }) => {
     const [scanResult, setScanResult] = useState(null);
     const lastScannedCodeRef = useRef(null);
     const lastScannedTimeRef = useRef(0);
+    const isEnabledRef = useRef(isEnabled);
+
+    // Sync ref with prop
+    useEffect(() => {
+        isEnabledRef.current = isEnabled;
+    }, [isEnabled]);
 
     useEffect(() => {
         // Use a flag to prevent race conditions in Strict Mode
@@ -59,7 +65,7 @@ const Scanner = ({ onScan }) => {
         const timerId = setTimeout(startScanner, 100);
 
         function onScanSuccess(decodedText, decodedResult) {
-            if (!isMounted) return;
+            if (!isMounted || !isEnabledRef.current) return;
 
             const now = Date.now();
             if (decodedText === lastScannedCodeRef.current && (now - lastScannedTimeRef.current) < 2500) {

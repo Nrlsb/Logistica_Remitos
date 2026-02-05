@@ -364,13 +364,7 @@ const RemitoForm = () => {
                 })
                 .catch(error => {
                     console.error('Error fetching product:', error);
-                    // Fallback for completely unknown item
-                    const product = {
-                        code: inputCode,
-                        name: 'Producto Desconocido',
-                        barcode: inputCode
-                    };
-                    openFichajeModal(product, null);
+                    triggerModal('Atención', 'Producto no encontrado en la base de datos.', 'error');
                 });
         }
     }, []); // Empty dependency array as we use refs/setters
@@ -810,7 +804,7 @@ const RemitoForm = () => {
 
                             {isScanning && (
                                 <div className="mt-4 rounded-lg overflow-hidden shadow-inner border border-gray-200">
-                                    <Scanner onScan={handleScan} />
+                                    <Scanner onScan={handleScan} isEnabled={!fichajeState.isOpen} />
                                 </div>
                             )}
                         </div>
