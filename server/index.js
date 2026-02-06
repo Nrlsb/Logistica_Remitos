@@ -157,11 +157,13 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
 
         if (error) throw error;
 
-        // Update pre-remito status to 'processed'
-        // We don't await the result strictly for the response, but it should happen
+        // Update pre-remito status to 'processed' and clear draft
         await supabase
             .from('pre_remitos')
-            .update({ status: 'processed' })
+            .update({
+                status: 'processed',
+                scanned_items: [] // Clear draft items when finalized
+            })
             .eq('order_number', remitoNumber);
 
         res.status(201).json(data[0]);
@@ -339,12 +341,42 @@ app.get('/api/pre-remitos/:orderNumber', verifyToken, async (req, res) => {
             sucursal: data.pedidos_ventas?.[0]?.cliente_tienda || null, // Map DB cliente_tienda to frontend sucursal
             cliente_codigo: data.pedidos_ventas?.[0]?.cliente_codigo || null,
             cliente_nombre: data.pedidos_ventas?.[0]?.cliente_nombre || null,
+            scanned_items: data.scanned_items || [], // Include draft items
             pedidos_ventas: undefined // Remove the array
         };
 
         res.json(responseData);
     } catch (error) {
         console.error('Error fetching pre-remito:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Update pre-remito draft (scanned items)
+app.patch('/api/pre-remitos/:orderNumber/draft', verifyToken, async (req, res) => {
+    const { orderNumber } = req.params;
+    const { scannedItems } = req.body;
+
+    if (!Array.isArray(scannedItems)) {
+        return res.status(400).json({ message: 'scannedItems must be an array' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('pre_remitos')
+            .update({ scanned_items: scannedItems })
+            .eq('order_number', orderNumber)
+            .select();
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ message: 'Pre-remito not found' });
+        }
+
+        res.json({ message: 'Draft saved successfully', data: data[0] });
+    } catch (error) {
+        console.error('Error saving pre-remito draft:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

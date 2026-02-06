@@ -103,6 +103,29 @@ const RemitoForm = () => {
         fetchInitialData();
     }, []);
 
+    // Auto-save draft items whenever they change
+    useEffect(() => {
+        const saveDraft = async () => {
+            // Only save if there is a pre-remito loaded
+            if (preRemitoNumber) {
+                try {
+                    await api.patch(`/api/pre-remitos/${preRemitoNumber}/draft`, {
+                        scannedItems: items
+                    });
+                } catch (error) {
+                    console.error('Error saving draft:', error);
+                }
+            }
+        };
+
+        // Debounce saving to avoid too many requests
+        const timeoutId = setTimeout(() => {
+            saveDraft();
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [items, preRemitoNumber]);
+
     const handleLoadPreRemito = async (selectedNumber = preRemitoNumber) => {
         if (!selectedNumber) return;
         setPreRemitoStatus('loading');
@@ -110,6 +133,14 @@ const RemitoForm = () => {
             const response = await api.get(`/api/pre-remitos/${selectedNumber}`);
             setExpectedItems(response.data.items); // items now contain { code, barcode, quantity, description } from DB
             setPreRemitoStatus('found');
+
+            // Load draft items if they exist
+            if (response.data.scanned_items && response.data.scanned_items.length > 0) {
+                setItems(response.data.scanned_items);
+            } else {
+                setItems([]);
+            }
+
             // Auto-fill remito number with the order number
             setRemitoNumber(selectedNumber);
         } catch (error) {
