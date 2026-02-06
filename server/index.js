@@ -23,6 +23,26 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Helper function to log activity (Backup/Audit System)
+const logActivity = async (username, action, entity_type = null, entity_id = null, details = {}) => {
+    try {
+        await supabase
+            .from('activity_logs')
+            .insert([
+                {
+                    username,
+                    action,
+                    entity_type,
+                    entity_id,
+                    details
+                }
+            ]);
+    } catch (error) {
+        console.error('Error logging activity:', error);
+    }
+};
+
+
 const path = require('path');
 
 // ... (existing imports)
@@ -165,6 +185,13 @@ app.post('/api/remitos', verifyToken, async (req, res) => {
                 scanned_items: [] // Clear draft items when finalized
             })
             .eq('order_number', remitoNumber);
+
+        // Log activity
+        await logActivity(req.user.username, 'create_remito', 'remitos', data[0].id, {
+            remito_number: remitoNumber,
+            items_count: items.length,
+            prepared_by: preparedBy
+        });
 
         res.status(201).json(data[0]);
     } catch (error) {
@@ -374,6 +401,11 @@ app.patch('/api/pre-remitos/:orderNumber/draft', verifyToken, async (req, res) =
             return res.status(404).json({ message: 'Pre-remito not found' });
         }
 
+        // Log activity
+        await logActivity(req.user.username, 'update_draft', 'pre_remitos', orderNumber, {
+            items_count: scannedItems.length
+        });
+
         res.json({ message: 'Draft saved successfully', data: data[0] });
     } catch (error) {
         console.error('Error saving pre-remito draft:', error);
@@ -493,6 +525,12 @@ app.post('/api/remitos/upload-pdf', verifyToken, multer({ storage: multer.memory
             }
         }
 
+        // Log activity
+        await logActivity(req.user.username, 'upload_pdf', 'remito_pdf', null, {
+            file_name: req.file.originalname,
+            items_count: enrichedItems.length
+        });
+
         res.json({ items: enrichedItems });
     } catch (error) {
         console.error('Error processing PDF:', error);
@@ -561,6 +599,9 @@ app.post('/api/auth/register', async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        // Log activity
+        await logActivity(data[0].username, 'register', 'user', data[0].id);
+
         res.status(201).json({ token, user: { id: data[0].id, username: data[0].username, role: data[0].role } });
     } catch (error) {
         console.error('Error registering user:', error);
@@ -622,6 +663,9 @@ app.post('/api/auth/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        // Log activity
+        await logActivity(user.username, 'login', 'user', user.id, { force: !!force });
+
         res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
     } catch (error) {
         console.error('Error logging in:', error);
@@ -641,6 +685,10 @@ app.post('/api/auth/logout', verifyToken, async (req, res) => {
             .eq('id', req.user.id);
 
         if (error) throw error;
+
+        // Log activity
+        await logActivity(req.user.username, 'logout', 'user', req.user.id);
+
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
         console.error('Error logging out:', error);
@@ -717,6 +765,11 @@ app.patch('/api/users/:id/tasks', verifyToken, async (req, res) => {
 
         if (error) throw error;
 
+        // Log activity
+        await logActivity(req.user.username, 'update_user_tasks', 'user', id, {
+            new_tasks: tasks
+        });
+
         res.json(data[0]);
     } catch (error) {
         console.error('Error updating user tasks:', error);
@@ -783,6 +836,13 @@ app.post('/api/admin/users', verifyToken, async (req, res) => {
             }
             throw error;
         }
+
+        // Log activity
+        await logActivity(req.user.username, 'admin_create_user', 'user', data[0].id, {
+            new_username: username,
+            role: role,
+            user_code: user_code
+        });
 
         res.status(201).json(data[0]);
     } catch (error) {
