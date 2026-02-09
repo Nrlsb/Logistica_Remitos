@@ -664,17 +664,19 @@ const RemitoForm = () => {
                     className={`flex items-center justify-between cursor-pointer group ${!isHeaderExpanded ? '' : 'mb-4'}`}
                     onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
                 >
-                    <div className="flex items-center gap-2">
-                        <svg className={`w-5 h-5 transition-colors ${!isHeaderExpanded ? 'text-gray-400' : 'text-brand-blue'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        <h3 className={`font-semibold transition-all ${!isHeaderExpanded ? 'text-sm text-gray-500' : 'text-lg text-brand-dark'}`}>
-                            {isHeaderExpanded ? 'Cargar Pedido (Pre-Remito)' : 'Configuración de Carga'}
-                        </h3>
+                    <div className={`flex gap-2 ${!isHeaderExpanded ? 'flex-col items-start' : 'items-center'}`}>
+                        <div className="flex items-center gap-2">
+                            <svg className={`w-5 h-5 transition-colors ${!isHeaderExpanded ? 'text-gray-400' : 'text-brand-blue'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <h3 className={`font-semibold transition-all ${!isHeaderExpanded ? 'text-sm text-gray-500' : 'text-lg text-brand-dark'}`}>
+                                {isHeaderExpanded ? 'Cargar Pedido (Pre-Remito)' : 'Configuración de Carga'}
+                            </h3>
+                        </div>
 
                         {!isHeaderExpanded && preRemitoStatus === 'found' && (
-                            <div className="ml-4 flex items-center gap-3 text-xs font-medium text-green-700 bg-green-100/50 px-3 py-1 rounded-full border border-green-200/50 animate-fade-in">
+                            <div className="flex items-center gap-3 text-xs font-medium text-green-700 bg-green-100/50 px-3 py-1 rounded-full border border-green-200/50 animate-fade-in">
                                 <span className="flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                    # {preRemitoNumber}
+                                    ID: {preRemitoNumber}
                                 </span>
                                 {(() => {
                                     const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
