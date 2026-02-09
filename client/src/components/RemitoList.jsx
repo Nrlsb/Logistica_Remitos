@@ -237,62 +237,92 @@ const RemitoList = () => {
                 ) : (
                     <div className="overflow-x-auto">
                         {/* Mobile Card View */}
-                        <div className="md:hidden space-y-4 p-4">
+                        <div className="md:hidden space-y-4 p-4 bg-gray-50/50">
                             {filteredRemitos.map((remito) => (
                                 <div
                                     key={remito.id}
                                     onClick={() => handleViewDetails(remito)}
-                                    className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 active:bg-gray-50 transition cursor-pointer"
+                                    className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 active:bg-gray-50 transition cursor-pointer flex flex-col gap-4"
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <span className="text-lg font-bold text-blue-600 block">
-                                                {remito.remito_number}
-                                            </span>
-                                            <span className="text-xs text-gray-500">
-                                                {new Date(remito.date).toLocaleDateString()} • {new Date(remito.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xl font-black text-brand-blue tracking-tight">
+                                                    {remito.numero_pv || '-'}
+                                                </span>
+                                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black uppercase border border-blue-100 italic">PV</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-400">
+                                                {new Date(remito.date).toLocaleDateString('es-AR')} • {new Date(remito.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs
                                             </span>
                                         </div>
                                         {(() => {
-                                            let badgeColor = 'bg-gray-100 text-gray-800';
+                                            let badgeStyles = 'bg-gray-100 text-gray-800 border-gray-200';
                                             let label = 'Escaneado';
 
                                             if (remito.status === 'finalized') {
-                                                badgeColor = 'bg-green-100 text-green-800';
+                                                badgeStyles = 'bg-green-100 text-green-700 border-green-200';
                                                 label = 'Finalizado';
                                             } else if (remito.status === 'packed') {
-                                                badgeColor = 'bg-blue-100 text-blue-800';
+                                                badgeStyles = 'bg-blue-100 text-blue-700 border-blue-200';
                                                 label = 'Achicado';
                                             } else if (remito.status === 'scanned' || remito.status === 'processed') {
-                                                badgeColor = 'bg-gray-100 text-gray-800';
+                                                badgeStyles = 'bg-gray-100 text-gray-600 border-gray-200';
                                                 label = 'Escaneado';
                                             } else if (remito.status === 'voided') {
-                                                badgeColor = 'bg-red-100 text-red-800';
+                                                badgeStyles = 'bg-red-100 text-red-700 border-red-200';
                                                 label = 'Anulado';
                                             }
 
                                             return (
-                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${badgeColor}`}>
+                                                <span className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-full border ${badgeStyles}`}>
                                                     {label}
                                                 </span>
                                             );
                                         })()}
                                     </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                                        <div className="flex items-center">
-                                            {remito.created_by ? (
-                                                <>
-                                                    <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 mr-2">
-                                                        {remito.created_by.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <span className="text-sm text-gray-600 truncate max-w-[100px]">{remito.created_by}</span>
-                                                </>
-                                            ) : (
-                                                <span className="text-sm text-gray-400 italic">Sistema</span>
-                                            )}
+
+                                    {/* Process/Roles Section */}
+                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 space-y-2.5">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-gray-400 font-bold uppercase tracking-wider">Detalles del Proceso</span>
+                                            <span className="text-gray-400 font-medium italic">{remito.remito_number}</span>
                                         </div>
-                                        <div className="text-sm text-gray-500">
-                                            {remito.items ? remito.items.length : 0} items
+
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                </div>
+                                                <span className="text-gray-500 font-medium">Preparado:</span>
+                                                <span className="text-gray-900 font-bold truncate">{remito.prepared_by || 'N/A'}</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h2M4 8h16M4 16h16M4 20h4"></path></svg>
+                                                </div>
+                                                <span className="text-gray-500 font-medium">Escaneado:</span>
+                                                <span className="text-gray-900 font-bold truncate">{remito.created_by || 'Sistema'}</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 rounded-full bg-green-50 flex items-center justify-center text-green-500 shrink-0 text-[10px] font-black uppercase leading-none">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                                </div>
+                                                <span className="text-gray-500 font-medium whitespace-nowrap">Packing/Achique:</span>
+                                                <span className="text-gray-900 font-bold truncate">{remito.packages_added_by || (remito.status === 'finalized' ? 'N/A' : 'Pendiente')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                            <span className="text-xs font-black text-gray-700">{remito.items ? remito.items.length : 0} ITEMS</span>
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">
+                                            Sucursal: {remito.sucursal || '-'}
                                         </div>
                                     </div>
                                 </div>
@@ -303,108 +333,90 @@ const RemitoList = () => {
                         <table className="hidden md:table min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido Venta</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pre-Remito</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sucursal</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    {user?.role === 'admin' && (
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    )}
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha / Remito</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Pedido Venta</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Items</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Preparado Por</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-x border-gray-100">Escaneado Por</th>
+                                    <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Achicado Por</th>
+                                    <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
+                                    <th className="px-6 py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Ver</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-100">
                                 {loading ? (
                                     [...Array(5)].map((_, i) => (
                                         <tr key={i} className="animate-pulse">
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                                            <td className="px-6 py-4 whitespace-nowrap"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                                            {user?.role === 'admin' && (
-                                                <td className="px-6 py-4 whitespace-nowrap text-right"><div className="h-4 bg-gray-200 rounded w-8 ml-auto"></div></td>
-                                            )}
+                                            <td colSpan="8" className="px-6 py-6"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
                                         </tr>
                                     ))
                                 ) : filteredRemitos.length === 0 ? (
                                     <tr>
-                                        <td colSpan={user?.role === 'admin' ? "8" : "7"} className="px-6 py-10 text-center text-gray-500">
+                                        <td colSpan="8" className="px-6 py-20 text-center text-gray-400 italic">
                                             No se encontraron remitos
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredRemitos.map((remito) => (
-                                        <tr key={remito.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={remito.id} className="hover:bg-blue-50/30 transition-colors group">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-sm font-bold text-gray-900">
                                                     {new Date(remito.date).toLocaleDateString()}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {new Date(remito.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                <div className="text-[10px] text-gray-400 font-mono">
+                                                    ID: {remito.remito_number}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-gray-900 font-mono">{remito.numero_pv || '-'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-brand-blue font-black tracking-tight">{remito.numero_pv || '-'}</span>
+                                                    <span className="text-[9px] text-gray-400 font-medium">Suc: {remito.sucursal || '-'}</span>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-semibold text-brand-blue font-mono">{remito.remito_number}</span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-gray-500">{remito.sucursal || '-'}</span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className="px-2.5 py-1 inline-flex text-xs font-black rounded-full bg-gray-100 text-gray-700 border border-gray-200">
                                                     {remito.items?.length || 0}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
-                                                        {remito.created_by ? remito.created_by.substring(0, 2) : 'U'}
-                                                    </div>
-                                                    <div className="ml-3">
-                                                        <div className="text-sm font-medium text-gray-900">{remito.created_by || 'Unknown'}</div>
-                                                    </div>
-                                                </div>
+                                                <div className="text-sm text-gray-700 font-medium">{remito.prepared_by || '-'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap border-x border-gray-50">
+                                                <div className="text-sm text-gray-700 font-bold">{remito.created_by || 'Sistema'}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`text-sm ${remito.packages_added_by ? 'text-gray-700 font-medium' : 'text-gray-300 italic'}`}>
+                                                    {remito.packages_added_by || 'Pendiente'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 {(() => {
-                                                    let badgeColor = 'bg-gray-100 text-gray-800';
+                                                    let badgeStyles = 'bg-gray-100 text-gray-800 border-gray-200';
                                                     let label = 'Escaneado';
 
                                                     if (remito.status === 'finalized') {
-                                                        badgeColor = 'bg-green-100 text-green-800';
+                                                        badgeStyles = 'bg-green-100 text-green-700 border-green-200';
                                                         label = 'Finalizado';
                                                     } else if (remito.status === 'packed') {
-                                                        badgeColor = 'bg-blue-100 text-blue-800';
+                                                        badgeStyles = 'bg-blue-100 text-blue-700 border-blue-200';
                                                         label = 'Achicado';
-                                                    } else if (remito.status === 'scanned' || remito.status === 'processed') {
-                                                        badgeColor = 'bg-gray-100 text-gray-800';
+                                                    } else if (remito.status === 'scanned') {
+                                                        badgeStyles = 'bg-gray-100 text-gray-600 border-gray-200';
                                                         label = 'Escaneado';
-                                                    } else if (remito.status === 'voided') {
-                                                        badgeColor = 'bg-red-100 text-red-800';
-                                                        label = 'Anulado';
                                                     }
 
                                                     return (
-                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeColor}`}>
+                                                        <span className={`px-2.5 py-1 inline-flex text-[10px] font-black rounded-full border uppercase ${badgeStyles}`}>
                                                             {label}
                                                         </span>
                                                     );
                                                 })()}
                                             </td>
-                                            {user?.role === 'admin' && (
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button onClick={() => handleViewDetails(remito)} className="text-gray-400 hover:text-brand-blue transition">
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 5 8.268 7.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                                    </button>
-                                                </td>
-                                            )}
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button onClick={() => handleViewDetails(remito)} className="text-gray-300 group-hover:text-brand-blue transition-all transform group-hover:scale-110">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 5 8.268 7.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -418,15 +430,29 @@ const RemitoList = () => {
             {selectedRemito && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
-                            <div>
-                                <h3 className="text-base font-bold text-gray-900">Remito: {selectedRemito.remito_number}</h3>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                    Creado por: <span className="font-medium">{selectedRemito.created_by || 'Sistema'}</span>
-                                </p>
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h3 className="text-xl font-black text-brand-dark">Detalle del Pedido</h3>
+                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-mono border border-gray-200">{selectedRemito.remito_number}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2">
+                                    <div className="flex items-center gap-1.5 text-xs">
+                                        <span className="text-gray-400 font-bold uppercase tracking-tight">Preparó:</span>
+                                        <span className="text-gray-900 font-black">{selectedRemito.prepared_by || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs">
+                                        <span className="text-gray-400 font-bold uppercase tracking-tight">Escaneó:</span>
+                                        <span className="text-gray-900 font-black">{selectedRemito.created_by || 'Sistema'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-xs">
+                                        <span className="text-gray-400 font-bold uppercase tracking-tight">Achicó:</span>
+                                        <span className="text-gray-900 font-black">{selectedRemito.packages_added_by || (selectedRemito.status === 'finalized' ? '-' : 'Pendiente')}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <button onClick={closeDetails} className="text-gray-400 hover:text-gray-600 transition p-2 hover:bg-gray-100 rounded-full">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <button onClick={closeDetails} className="text-gray-300 hover:text-gray-500 transition p-2 hover:bg-gray-50 rounded-full shrink-0">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
 
