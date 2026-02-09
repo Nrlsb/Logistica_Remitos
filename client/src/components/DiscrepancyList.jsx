@@ -63,183 +63,153 @@ const DiscrepancyList = () => {
     if (error) return <div className="text-center mt-8 text-red-500">{error}</div>;
 
     return (
-        <div className="container mx-auto p-4">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Registro de Discrepancias</h2>
+        <div className="max-w-5xl mx-auto px-4 py-8">
+            <div className="mb-8">
+                <h2 className="text-3xl font-black text-brand-dark tracking-tight">Registro de Discrepancias</h2>
+                <p className="text-gray-500 font-medium mt-1">Control detallado de faltantes y sobrantes detectados en el escaneo.</p>
+            </div>
 
             {/* Search and Filter Controls */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row gap-4">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
-                    <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <label htmlFor="search" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Buscar</label>
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-brand-blue">
+                            <svg className="h-5 w-5 text-gray-300 group-focus-within:text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                         <input
                             type="text"
                             id="search"
-                            className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md p-2 border"
-                            placeholder="Buscar por remito, código o descripción..."
+                            className="bg-gray-50/50 border-2 border-gray-100 focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/5 block w-full pl-12 text-sm text-gray-900 rounded-xl p-3.5 transition-all outline-none"
+                            placeholder="Remito, código o descripción de producto..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
-                <div className="w-full md:w-64">
-                    <label htmlFor="filter" className="block text-sm font-medium text-gray-700 mb-1">Filtrar por tipo</label>
-                    <select
-                        id="filter"
-                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
-                    >
-                        <option value="all">Todos los registros</option>
-                        <option value="missing">Solo Faltantes</option>
-                        <option value="extra">Solo Sobrantes</option>
-                    </select>
+                <div className="w-full md:w-72">
+                    <label htmlFor="filter" className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Filtrar por tipo</label>
+                    <div className="relative">
+                        <select
+                            id="filter"
+                            className="appearance-none bg-gray-50/50 border-2 border-gray-100 focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/5 block w-full pl-4 pr-10 py-3.5 text-sm font-bold text-gray-700 rounded-xl transition-all outline-none cursor-pointer"
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                        >
+                            <option value="all">Todos los registros</option>
+                            <option value="missing">Solo Faltantes</option>
+                            <option value="extra">Solo Sobrantes</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {filteredRemitos.length === 0 ? (
-                <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
-                    No se encontraron remitos con discrepancias.
+                <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center flex flex-col items-center">
+                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-xl font-black text-gray-700">No hay resultados</h3>
+                    <p className="text-gray-400 font-medium mt-1">No se encontraron remitos con discrepancias que coincidan con tu búsqueda.</p>
                 </div>
             ) : (
-                <div className="space-y-8">
+                <div className="space-y-12">
                     {filteredRemitos.map((remito) => {
                         const items = remito.filteredItems;
                         return (
-                            <div key={remito.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                                <div className="bg-navy-900 p-4 border-b border-gray-200 flex justify-between items-center bg-white">
+                            <div key={remito.id} className="relative group">
+                                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-brand-blue/20 rounded-full group-hover:bg-brand-blue transition-colors"></div>
+
+                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                                     <div>
-                                        <span className="font-semibold text-lg text-gray-700">Remito: {remito.remito_number}</span>
-                                        <div className="text-sm text-gray-500">{new Date(remito.date).toLocaleString()}</div>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
-                                        Creado por: <span className="font-medium">{remito.created_by || 'Desconocido'}</span>
+                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Orden de Carga
+                                        </div>
+                                        <h3 className="text-2xl font-black text-brand-dark tracking-tight">{remito.remito_number}</h3>
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <div className="text-sm font-bold text-gray-400 flex items-center gap-1.5">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {new Date(remito.date).toLocaleDateString()}
+                                            </div>
+                                            <div className="h-1 w-1 rounded-full bg-gray-300"></div>
+                                            <div className="text-sm font-bold text-gray-500 flex items-center gap-1.5">
+                                                <div className="w-6 h-6 rounded-full bg-brand-blue/10 flex items-center justify-center text-[10px] text-brand-blue border border-brand-blue/20">
+                                                    {(remito.created_by || 'U')[0].toUpperCase()}
+                                                </div>
+                                                {remito.created_by || 'Desconocido'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Mobile Card View */}
-                                <div className="md:hidden space-y-4 px-4 pb-4">
+                                {/* Items Container */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {items.map((item, idx) => {
                                         const isMissing = item.type === 'missing';
-                                        const cardBg = isMissing ? 'bg-[#FEF2F2]' : 'bg-[#FFFBEB]';
-                                        const textColor = isMissing ? 'text-[#991B1B]' : 'text-[#92400E]';
-                                        const badgeBg = isMissing ? 'bg-[#991B1B]' : 'bg-[#92400E]';
+                                        const accentColor = isMissing ? 'red' : 'orange';
                                         const difference = isMissing
                                             ? (item.scanned - item.expected)
                                             : item.quantity;
 
                                         return (
-                                            <div key={idx} className={`${cardBg} rounded-xl p-4 shadow-sm border border-opacity-10 border-gray-400 relative`}>
-                                                <div className="flex justify-between items-start">
-                                                    <div className="pr-14">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border border-current ${textColor} bg-white bg-opacity-60`}>
-                                                                {isMissing ? 'Faltante' : 'Sobrante'}
-                                                            </span>
+                                            <div key={idx} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-${accentColor}-900/5 transition-all duration-300 flex flex-col h-full`}>
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-${accentColor}-100 bg-${accentColor}-50 text-${accentColor}-600`}>
+                                                        {isMissing ? 'Faltante' : 'Sobrante'}
+                                                    </span>
+                                                    <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-${accentColor}-600 text-white shadow-lg shadow-${accentColor}-600/20`}>
+                                                        <span className="text-lg font-black leading-none">{difference > 0 ? `+${difference}` : difference}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex-1">
+                                                    <h4 className="font-black text-gray-900 leading-tight mb-1 text-base group-hover:text-brand-blue transition-colors">
+                                                        {item.description || 'Producto desconocido'}
+                                                    </h4>
+                                                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 text-[10px] font-mono font-bold text-gray-400 border border-gray-100">
+                                                        {item.code}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
+                                                    <div className="flex gap-4">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">Esperado</span>
+                                                            <span className="font-bold text-sm text-gray-600 font-mono">{isMissing ? item.expected : '-'}</span>
                                                         </div>
-                                                        <h3 className={`font-bold text-lg leading-tight mb-2 ${textColor}`}>
-                                                            {item.description || 'Producto desconocido'}
-                                                        </h3>
-                                                        <div className={`text-xs font-mono opacity-80 ${textColor} mb-3`}>
-                                                            {item.code}
-                                                        </div>
-                                                        <div className={`text-sm ${textColor} flex items-center gap-2 bg-white bg-opacity-40 p-2 rounded-lg inline-block`}>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] uppercase opacity-70">Esperado</span>
-                                                                <span className="font-bold font-mono text-base">{isMissing ? item.expected : '-'}</span>
-                                                            </div>
-                                                            <div className="h-8 w-px bg-current opacity-20 mx-1"></div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[10px] uppercase opacity-70">Encontrado</span>
-                                                                <span className="font-bold font-mono text-base">{isMissing ? item.scanned : '-'}</span>
-                                                            </div>
+                                                        <div className="w-px h-6 bg-gray-100 self-end mb-1"></div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">Actual</span>
+                                                            <span className={`font-black text-sm font-mono ${isMissing ? 'text-red-600' : 'text-orange-600'}`}>{isMissing ? item.scanned : item.quantity}</span>
                                                         </div>
                                                     </div>
 
-                                                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col items-center">
-                                                        <div className={`w-14 h-14 rounded-full ${badgeBg} text-white flex items-center justify-center text-xl font-bold shadow-md`}>
-                                                            {difference > 0 ? `+${difference}` : difference}
-                                                        </div>
+                                                    <div className="flex gap-1">
+                                                        <button className="p-2 rounded-lg text-gray-300 hover:text-green-500 hover:bg-green-50 transition-all active:scale-95" title="Marcar como revisado">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                        </button>
+                                                        <button className="p-2 rounded-lg text-gray-300 hover:text-brand-blue hover:bg-brand-blue/5 transition-all active:scale-95" title="Añadir comentario">
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
                                         );
                                     })}
-                                </div>
-
-                                {/* Desktop Table View */}
-                                <div className="hidden md:block overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-[#F9FAFB]">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Esperado</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encontrado</th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diferencia</th>
-                                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {items.map((item, idx) => {
-                                                const isMissing = item.type === 'missing';
-                                                const rowClass = isMissing ? 'bg-[#FEF2F2]' : 'bg-[#FFFBEB]';
-                                                const textClass = isMissing ? 'text-[#991B1B]' : 'text-[#92400E]';
-                                                const badgeClass = isMissing
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-yellow-100 text-yellow-800';
-                                                const badgeText = isMissing ? 'Faltante' : 'Sobrante';
-                                                const difference = isMissing
-                                                    ? (item.scanned - item.expected)
-                                                    : item.quantity; // For extra, quantity is the surplus amount
-
-                                                return (
-                                                    <tr key={idx} className={rowClass}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center">
-                                                                <div className={`text-sm font-medium ${textClass}`}>
-                                                                    {item.description || 'Producto desconocido'}
-                                                                </div>
-                                                                <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}`}>
-                                                                    {badgeText}
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono ${textClass}`}>
-                                                            {item.code}
-                                                        </td>
-                                                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono ${textClass}`}>
-                                                            {isMissing ? item.expected : '-'}
-                                                        </td>
-                                                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono ${textClass}`}>
-                                                            {isMissing ? item.scanned : '-'}
-                                                        </td>
-                                                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-mono font-bold ${textClass}`}>
-                                                            {difference > 0 ? `+${difference}` : difference}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                            <div className="flex justify-end space-x-2">
-                                                                <button className={`text-opacity-70 hover:text-opacity-100 ${textClass}`} title="Marcar como revisado">
-                                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                                                    </svg>
-                                                                </button>
-                                                                <button className={`text-opacity-70 hover:text-opacity-100 ${textClass}`} title="Añadir comentario">
-                                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         );
