@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-const Scanner = ({ onScan, isEnabled = true }) => {
+const Scanner = ({ onScan, isEnabled = true, className = "" }) => {
     const [scanResult, setScanResult] = useState(null);
     const lastScannedCodeRef = useRef(null);
     const lastScannedTimeRef = useRef(0);
@@ -96,8 +96,8 @@ const Scanner = ({ onScan, isEnabled = true }) => {
     }, [onScan]);
 
     return (
-        <div className="w-full max-w-md mx-auto">
-            <div id="reader" className="w-full"></div>
+        <div className={`w-full ${className || 'max-w-md mx-auto'}`}>
+            <div id="reader" className="w-full h-full"></div>
             {scanResult && (
                 <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
                     Last Scanned: <span className="font-bold">{scanResult}</span>

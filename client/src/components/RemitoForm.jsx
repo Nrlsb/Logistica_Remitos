@@ -891,9 +891,28 @@ const RemitoForm = () => {
                                 {isScanning ? 'Detener Cámara' : 'Usar Cámara'}
                             </button>
 
+                            {/* Fullscreen Camera Overlay */}
                             {isScanning && (
-                                <div className="mt-4 rounded-lg overflow-hidden shadow-inner border border-gray-200">
-                                    <Scanner onScan={handleScan} isEnabled={!fichajeState.isOpen} />
+                                <div className="fixed inset-0 z-50 bg-black flex flex-col">
+                                    {/* Scanner Area - 90% */}
+                                    <div className="h-[90%] w-full flex items-center justify-center bg-black relative overflow-hidden">
+                                        <Scanner
+                                            onScan={handleScan}
+                                            isEnabled={!fichajeState.isOpen}
+                                            className="w-full h-full"
+                                        />
+                                    </div>
+
+                                    {/* Button Area - 10% */}
+                                    <div className="h-[10%] bg-white flex items-center justify-center p-2 border-t border-gray-200">
+                                        <button
+                                            onClick={() => setIsScanning(false)}
+                                            className="flex items-center justify-center px-6 py-2 bg-white border border-red-200 text-red-700 font-bold rounded-full shadow-sm hover:bg-red-50 active:scale-95 transition"
+                                        >
+                                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            Detener Cámara
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
