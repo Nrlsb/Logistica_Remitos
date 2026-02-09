@@ -48,6 +48,9 @@ const RemitoForm = () => {
         expectedQuantity: null
     });
 
+    // Header Visibility State
+    const [isHeaderExpanded, setIsHeaderExpanded] = useState(true);
+
     const triggerModal = (title, message, type = 'info') => {
         setModalConfig({
             isOpen: true,
@@ -656,56 +659,88 @@ const RemitoForm = () => {
             </div>
 
             {/* Pre-Remito Section */}
-            <div className="mb-8 p-4 md:p-6 bg-brand-bg rounded-xl border border-gray-200 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-5 h-5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    <h3 className="text-lg font-semibold text-brand-dark">Cargar Pedido (Pre-Remito)</h3>
+            <div className={`mb-8 bg-brand-bg rounded-xl border border-gray-200 shadow-sm transition-all duration-300 overflow-hidden ${!isHeaderExpanded ? 'p-2 md:p-3 bg-gray-50' : 'p-4 md:p-6'}`}>
+                <div
+                    className={`flex items-center justify-between cursor-pointer group ${!isHeaderExpanded ? '' : 'mb-4'}`}
+                    onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+                >
+                    <div className="flex items-center gap-2">
+                        <svg className={`w-5 h-5 transition-colors ${!isHeaderExpanded ? 'text-gray-400' : 'text-brand-blue'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <h3 className={`font-semibold transition-all ${!isHeaderExpanded ? 'text-sm text-gray-500' : 'text-lg text-brand-dark'}`}>
+                            {isHeaderExpanded ? 'Cargar Pedido (Pre-Remito)' : 'Configuración de Carga'}
+                        </h3>
+
+                        {!isHeaderExpanded && preRemitoStatus === 'found' && (
+                            <div className="ml-4 flex items-center gap-3 text-xs font-medium text-green-700 bg-green-100/50 px-3 py-1 rounded-full border border-green-200/50 animate-fade-in">
+                                <span className="flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    # {preRemitoNumber}
+                                </span>
+                                {(() => {
+                                    const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
+                                    return selectedPre?.numero_pv && <span>PV: {selectedPre.numero_pv}</span>;
+                                })()}
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        className="p-1.5 hover:bg-white rounded-lg transition-colors text-gray-400 group-hover:text-brand-blue"
+                        aria-label={isHeaderExpanded ? "Contraer" : "Expandir"}
+                    >
+                        <svg className={`w-5 h-5 transform transition-transform duration-300 ${isHeaderExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-brand-gray mb-2">Seleccionar Pedido</label>
-                        <div className="flex flex-col md:flex-row gap-3">
-                            <select
-                                value={preRemitoNumber}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setPreRemitoNumber(val);
-                                    if (val) handleLoadPreRemito(val);
-                                }}
-                                className="flex-1 h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-base bg-white"
-                            >
-                                <option value="">Seleccione un pedido...</option>
-                                {Array.isArray(preRemitoList) && preRemitoList.map((pre) => (
-                                    <option key={pre.id} value={pre.order_number}>
-                                        {pre.numero_pv
-                                            ? `PV: ${pre.numero_pv} - Cliente: ${pre.cliente_nombre || '-'} (${pre.cliente_codigo || '-'})`
-                                            : `Pre-Remito #${pre.order_number} (${new Date(pre.created_at).toLocaleDateString()})`}
-                                    </option>
-                                ))}
-                            </select>
+                {isHeaderExpanded && (
+                    <div className="animate-fade-in">
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-brand-gray mb-2">Seleccionar Pedido</label>
+                                <div className="flex flex-col md:flex-row gap-3">
+                                    <select
+                                        value={preRemitoNumber}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setPreRemitoNumber(val);
+                                            if (val) handleLoadPreRemito(val);
+                                        }}
+                                        className="flex-1 h-12 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition shadow-sm text-base bg-white"
+                                    >
+                                        <option value="">Seleccione un pedido...</option>
+                                        {Array.isArray(preRemitoList) && preRemitoList.map((pre) => (
+                                            <option key={pre.id} value={pre.order_number}>
+                                                {pre.numero_pv
+                                                    ? `PV: ${pre.numero_pv} - Cliente: ${pre.cliente_nombre || '-'} (${pre.cliente_codigo || '-'})`
+                                                    : `Pre-Remito #${pre.order_number} (${new Date(pre.created_at).toLocaleDateString()})`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-brand-gray mb-2">Preparado por <span className="text-red-500">*</span></label>
+                                <select
+                                    value={selectedPreparer}
+                                    onChange={(e) => setSelectedPreparer(e.target.value)}
+                                    className={`block w-full h-12 p-3 border rounded-lg focus:ring-2 focus:ring-brand-blue transition shadow-sm text-base bg-white ${!selectedPreparer && expectedItems ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'}`}
+                                >
+                                    <option value="">Seleccione el preparador...</option>
+                                    {preparersList.map((p) => (
+                                        <option key={p.user_code || p.username} value={p.user_code || p.username}>
+                                            {p.user_code ? `${p.username} (${p.user_code})` : p.username}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-brand-gray mb-2">Preparado por <span className="text-red-500">*</span></label>
-                        <select
-                            value={selectedPreparer}
-                            onChange={(e) => setSelectedPreparer(e.target.value)}
-                            className={`block w-full h-12 p-3 border rounded-lg focus:ring-2 focus:ring-brand-blue transition shadow-sm text-base bg-white ${!selectedPreparer && expectedItems ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'}`}
-                        >
-                            <option value="">Seleccione el preparador...</option>
-                            {preparersList.map((p) => (
-                                <option key={p.user_code || p.username} value={p.user_code || p.username}>
-                                    {p.user_code ? `${p.username} (${p.user_code})` : p.username}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* PDF Upload Row */}
-                {/* PDF Upload Row Hidden
+                        {/* PDF Upload Row */}
+                        {/* PDF Upload Row Hidden
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-brand-gray mb-2">O subir PDF de Remito</label>
                     <input
@@ -722,53 +757,55 @@ const RemitoForm = () => {
                 </div>
                 */}
 
-                {preRemitoStatus === 'found' && (
-                    <div className="mt-6 p-0 bg-white border border-green-100 rounded-xl shadow-sm overflow-hidden">
-                        <div className="bg-green-50 px-6 py-3 border-b border-green-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1 bg-green-500 rounded-full">
-                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                </div>
-                                <span className="font-bold text-green-800">Pedido cargado con éxito</span>
-                            </div>
-                            <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
-                                {expectedItems.length} items esperados
-                            </span>
-                        </div>
-
-                        {(() => {
-                            const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
-                            if (selectedPre) {
-                                return (
-                                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {selectedPre.numero_pv && (
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pedido de Venta (PV)</span>
-                                                <span className="text-gray-700 font-semibold">{selectedPre.numero_pv}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente</span>
-                                            <span className="text-gray-700 font-semibold truncate" title={selectedPre.cliente_nombre}>
-                                                {selectedPre.cliente_nombre || '-'}
-                                                <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px]">{selectedPre.cliente_codigo || '-'}</span>
-                                            </span>
+                        {preRemitoStatus === 'found' && (
+                            <div className="mt-6 p-0 bg-white border border-green-100 rounded-xl shadow-sm overflow-hidden">
+                                <div className="bg-green-50 px-6 py-3 border-b border-green-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1 bg-green-500 rounded-full">
+                                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">ID Interno / Pre-Remito</span>
-                                            <span className="text-gray-700 font-bold font-mono tracking-tight">{selectedPre.order_number}</span>
-                                        </div>
+                                        <span className="font-bold text-green-800">Pedido cargado con éxito</span>
                                     </div>
-                                );
-                            }
-                            return null;
-                        })()}
-                    </div>
-                )}
-                {preRemitoStatus === 'not_found' && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        <span className="font-medium">Pedido no encontrado.</span>
+                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
+                                        {expectedItems.length} items esperados
+                                    </span>
+                                </div>
+
+                                {(() => {
+                                    const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
+                                    if (selectedPre) {
+                                        return (
+                                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {selectedPre.numero_pv && (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pedido de Venta (PV)</span>
+                                                        <span className="text-gray-700 font-semibold">{selectedPre.numero_pv}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente</span>
+                                                    <span className="text-gray-700 font-semibold truncate" title={selectedPre.cliente_nombre}>
+                                                        {selectedPre.cliente_nombre || '-'}
+                                                        <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px]">{selectedPre.cliente_codigo || '-'}</span>
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">ID Interno / Pre-Remito</span>
+                                                    <span className="text-gray-700 font-bold font-mono tracking-tight">{selectedPre.order_number}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        )}
+                        {preRemitoStatus === 'not_found' && (
+                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <span className="font-medium">Pedido no encontrado.</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
