@@ -221,8 +221,9 @@ const AchiqueList = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="bg-transparent md:bg-white md:rounded-xl md:shadow-sm md:border md:border-gray-200 overflow-hidden">
+                {/* Desktop View (Table) */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold">
@@ -293,6 +294,95 @@ const AchiqueList = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View (Cards) */}
+                <div className="md:hidden space-y-4">
+                    {loading ? (
+                        <div className="bg-white p-8 text-center text-gray-500 rounded-xl border border-gray-200">Cargando...</div>
+                    ) : filteredRemitos.length === 0 ? (
+                        <div className="bg-white p-8 text-center text-gray-500 rounded-xl border border-gray-200">No se encontraron pedidos.</div>
+                    ) : (
+                        filteredRemitos.map((remito) => (
+                            <div key={remito.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Pre-Remito</span>
+                                        <div className="font-mono font-bold text-brand-blue bg-blue-50 px-2 py-1 rounded text-base w-fit border border-blue-100">
+                                            {remito.remito_number}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-gray-900">{new Date(remito.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                                        <div className="text-[10px] text-gray-400 font-medium">{new Date(remito.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-lg font-black text-brand-dark tracking-tight">{remito.numero_pv || '-'}</span>
+                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase">PV</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        <span className="truncate">{remito.cliente_nombre || '-'}</span>
+                                        <span className="text-[10px] text-gray-400 shrink-0">({remito.cliente_codigo || '-'})</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 py-3 border-y border-gray-50 bg-white">
+                                    <div className="flex-1">
+                                        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1.5">Items</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="bg-blue-100 text-blue-700 text-xs font-black px-2.5 py-1 rounded-full border border-blue-200">
+                                                {remito.items?.length || 0}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-gray-500">Unid.</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-[1px] h-8 bg-gray-100"></div>
+                                    <div className="flex-1">
+                                        <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1.5">Estado Bultos</span>
+                                        {remito.total_packages ? (
+                                            <div className="flex flex-col">
+                                                <span className="bg-green-100 text-green-700 text-xs font-black px-2.5 py-1 rounded-full border border-green-200 w-fit">
+                                                    {remito.total_packages} BULTOS
+                                                </span>
+                                                {remito.packages_added_by && (
+                                                    <span className="text-[9px] text-gray-400 font-medium mt-1 pl-1 italic">Por: {remito.packages_added_by}</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 text-[11px] font-bold italic tracking-wide flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                                                PENDIENTE
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleOpenModal(remito)}
+                                    className={`w-full py-3.5 rounded-xl font-black text-sm transition-all transform active:scale-95 shadow-sm active:shadow-none flex items-center justify-center gap-2 ${remito.total_packages
+                                            ? 'bg-white border-2 border-brand-blue/20 text-brand-blue hover:bg-brand-blue/5'
+                                            : 'bg-brand-blue text-white hover:bg-blue-700'
+                                        }`}
+                                >
+                                    {remito.total_packages ? (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                            Re-imprimir Etiqueta
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+                                            Cargar Bultos
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

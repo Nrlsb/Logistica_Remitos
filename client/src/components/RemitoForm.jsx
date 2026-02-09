@@ -564,42 +564,42 @@ const RemitoForm = () => {
                                             </button>
 
                                             {missingExpanded && (
-                                                <div className="space-y-3 max-h-[300px] overflow-y-auto p-1 custom-scrollbar">
+                                                <div className="space-y-4 max-h-[350px] overflow-y-auto p-1 custom-scrollbar">
                                                     {pendingDiscrepancies.missing.map(item => (
-                                                        <div key={item.code} className="bg-white p-3 rounded border border-gray-200 shadow-sm">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <div>
-                                                                    <p className="font-semibold text-gray-800">{item.description}</p>
-                                                                    <p className="text-xs text-gray-500">{item.code}</p>
+                                                        <div key={item.code} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div className="flex-1 min-w-0 pr-2">
+                                                                    <p className="font-bold text-gray-900 leading-tight px-0 whitespace-normal break-words">{item.description}</p>
+                                                                    <p className="text-xs text-gray-400 font-mono mt-0.5">{item.code}</p>
                                                                 </div>
-                                                                <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">
-                                                                    Faltan: {item.expected - item.scanned}
-                                                                </span>
+                                                                <div className="bg-red-50 text-red-600 text-[10px] font-black px-2.5 py-1 rounded-full border border-red-100 whitespace-nowrap">
+                                                                    FALTAN: {item.expected - item.scanned}
+                                                                </div>
                                                             </div>
 
-                                                            <div className="mt-2 flex gap-4">
-                                                                <label className="flex items-center cursor-pointer">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`reason-${item.code}`}
-                                                                        value="no_stock"
-                                                                        checked={missingReasons[item.code] === 'no_stock'}
-                                                                        onChange={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'no_stock' }))}
-                                                                        className="w-4 h-4 text-brand-blue border-gray-300 focus:ring-brand-blue"
-                                                                    />
-                                                                    <span className="ml-2 text-sm text-gray-700">Sin Stock</span>
-                                                                </label>
-                                                                <label className="flex items-center cursor-pointer">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`reason-${item.code}`}
-                                                                        value="damaged"
-                                                                        checked={missingReasons[item.code] === 'damaged'}
-                                                                        onChange={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'damaged' }))}
-                                                                        className="w-4 h-4 text-brand-blue border-gray-300 focus:ring-brand-blue"
-                                                                    />
-                                                                    <span className="ml-2 text-sm text-gray-700">Producto Dañado</span>
-                                                                </label>
+                                                            <div className="grid grid-cols-2 gap-2 mt-4">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'no_stock' }))}
+                                                                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border-2 text-xs font-bold transition-all transform active:scale-95 ${missingReasons[item.code] === 'no_stock'
+                                                                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue shadow-sm'
+                                                                        : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-3 h-3 rounded-full border-2 ${missingReasons[item.code] === 'no_stock' ? 'bg-brand-blue border-brand-blue' : 'border-gray-300'}`}></div>
+                                                                    Sin Stock
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setMissingReasons(prev => ({ ...prev, [item.code]: 'damaged' }))}
+                                                                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border-2 text-xs font-bold transition-all transform active:scale-95 ${missingReasons[item.code] === 'damaged'
+                                                                        ? 'bg-brand-blue/10 border-brand-blue text-brand-blue shadow-sm'
+                                                                        : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-3 h-3 rounded-full border-2 ${missingReasons[item.code] === 'damaged' ? 'bg-brand-blue border-brand-blue' : 'border-gray-300'}`}></div>
+                                                                    Dañado
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ))}
