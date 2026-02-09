@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import DiscrepancyList from './components/DiscrepancyList';
 import AchiqueList from './components/AchiqueList';
+import RemitoDetail from './components/RemitoDetail';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children, role }) => {
@@ -73,6 +74,11 @@ const AppContent = () => {
             <Route path="/users" element={
               <ProtectedRoute role="admin">
                 <ManageUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/remito/:id" element={
+              <ProtectedRoute>
+                <RemitoDetail />
               </ProtectedRoute>
             } />
 

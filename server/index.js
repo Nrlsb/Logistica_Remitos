@@ -296,7 +296,59 @@ app.get('/api/remitos', verifyToken, async (req, res) => {
     }
 });
 
-// ... (skipping generic remito by ID)
+// Get single remito by ID with PV info
+app.get('/api/remitos/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data: remito, error: remitoError } = await supabase
+            .from('remitos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (remitoError) throw remitoError;
+
+        // Fetch PV info
+        const { data: preRemitoData, error: preRemitoError } = await supabase
+            .from('pre_remitos')
+            .select(`
+                order_number,
+                pedidos_ventas (
+                    numero_pv,
+                    cliente_tienda,
+                    cliente_codigo,
+                    cliente_nombre
+                )
+            `)
+            .eq('order_number', remito.remito_number)
+            .maybeSingle();
+
+        let extraInfo = {
+            numero_pv: '-',
+            sucursal: '-',
+            cliente_codigo: '-',
+            cliente_nombre: '-'
+        };
+
+        if (!preRemitoError && preRemitoData) {
+            const pv = preRemitoData.pedidos_ventas?.[0];
+            extraInfo = {
+                numero_pv: pv?.numero_pv || '-',
+                sucursal: pv?.cliente_tienda || '-',
+                cliente_codigo: pv?.cliente_codigo || '-',
+                cliente_nombre: pv?.cliente_nombre || '-'
+            };
+        }
+
+        res.json({
+            ...remito,
+            ...extraInfo
+        });
+    } catch (error) {
+        console.error('Error fetching single remito:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 // Get all pre-remitos (for selection list)
 // Get all pre-remitos (for selection list) with PV info

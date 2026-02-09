@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api';
 import Modal from './Modal';
 import { useAuth } from '../context/AuthContext';
@@ -488,7 +489,7 @@ const RemitoList = () => {
                                 {mainTab === 'scanned' && (
                                     <div className="animate-in fade-in duration-200">
                                         <div className="space-y-3">
-                                            {selectedRemito.items && selectedRemito.items.map((item, idx) => (
+                                            {selectedRemito.items && selectedRemito.items.slice(0, 20).map((item, idx) => (
                                                 <div key={idx} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 shadow-sm">
                                                     <div className="flex-1 min-w-0 pr-4">
                                                         <p className="font-medium text-gray-900 text-sm truncate">{item.name || item.description || 'Producto'}</p>
@@ -499,6 +500,16 @@ const RemitoList = () => {
                                                     </div>
                                                 </div>
                                             ))}
+                                            {selectedRemito.items?.length > 20 && (
+                                                <div className="mt-4 text-center">
+                                                    <Link
+                                                        to={`/remito/${selectedRemito.id}`}
+                                                        className="text-brand-blue font-bold hover:underline py-2 px-4 bg-blue-50 rounded-lg inline-block text-sm"
+                                                    >
+                                                        Ver todos los productos ({selectedRemito.items.length})
+                                                    </Link>
+                                                </div>
+                                            )}
                                             {(!selectedRemito.items || selectedRemito.items.length === 0) && (
                                                 <div className="text-center py-10 text-gray-400 text-sm">
                                                     No hay productos escaneados
@@ -545,7 +556,7 @@ const RemitoList = () => {
                                                         <div className="animate-in fade-in duration-200">
                                                             {selectedRemito.discrepancies.missing?.length > 0 ? (
                                                                 <ul className="space-y-3">
-                                                                    {selectedRemito.discrepancies.missing.map((item, idx) => (
+                                                                    {selectedRemito.discrepancies.missing.slice(0, 20).map((item, idx) => (
                                                                         <li key={idx} className="flex items-start bg-[#FFF1F2] p-3 rounded-r-lg border-l-4 border-red-500 shadow-sm">
                                                                             <div className="mt-1 mr-3 text-red-500">
                                                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -571,6 +582,16 @@ const RemitoList = () => {
                                                                             </div>
                                                                         </li>
                                                                     ))}
+                                                                    {selectedRemito.discrepancies.missing.length > 20 && (
+                                                                        <div className="mt-4 text-center">
+                                                                            <Link
+                                                                                to={`/remito/${selectedRemito.id}`}
+                                                                                className="text-brand-blue font-bold hover:underline py-2 px-4 bg-blue-50 rounded-lg inline-block text-sm"
+                                                                            >
+                                                                                Ver todas las discrepancias ({selectedRemito.discrepancies.missing.length})
+                                                                            </Link>
+                                                                        </div>
+                                                                    )}
                                                                 </ul>
                                                             ) : (
                                                                 <div className="text-center py-8 text-gray-400 text-sm">
