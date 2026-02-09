@@ -465,13 +465,21 @@ const RemitoForm = () => {
         }
 
         // Smart Search for suggestions
+        // Smart Search for suggestions
         const fuse = new Fuse(expectedItems, {
             keys: ['description', 'code'],
-            threshold: 0.3,
+            threshold: 0.2, // Reduced for stricter matching
+            useExtendedSearch: true, // Enable extended search
             ignoreLocation: true
         });
 
-        const matches = fuse.search(value).map(result => result.item);
+        // Transform input "term1 term2" into "'term1 'term2" (AND logic)
+        const query = value.split(' ')
+            .filter(term => term.length > 0)
+            .map(term => `'${term}`)
+            .join(' ');
+
+        const matches = fuse.search(query).map(result => result.item);
 
         setManualSuggestions(matches.slice(0, 5)); // Limit to 5 suggestions
         setShowSuggestions(matches.length > 0);
@@ -715,29 +723,40 @@ const RemitoForm = () => {
                 */}
 
                 {preRemitoStatus === 'found' && (
-                    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-                        <div className="flex items-center mb-2">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                            <span className="font-bold text-lg">Pedido cargado con éxito</span>
-                            <span className="ml-3 bg-green-200 text-green-900 text-xs font-bold px-2 py-0.5 rounded-full">{expectedItems.length} items esperados</span>
+                    <div className="mt-6 p-0 bg-white border border-green-100 rounded-xl shadow-sm overflow-hidden">
+                        <div className="bg-green-50 px-6 py-3 border-b border-green-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1 bg-green-500 rounded-full">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <span className="font-bold text-green-800">Pedido cargado con éxito</span>
+                            </div>
+                            <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
+                                {expectedItems.length} items esperados
+                            </span>
                         </div>
-                        {/* Show extra info if available */}
+
                         {(() => {
                             const selectedPre = preRemitoList.find(p => String(p.order_number) === String(preRemitoNumber));
-                            if (selectedPre && selectedPre.numero_pv) {
+                            if (selectedPre) {
                                 return (
-                                    <div className="ml-7 text-sm grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="font-semibold text-green-700">Pedido de Venta (PV):</span>
-                                            <span className="ml-1">{selectedPre.numero_pv}</span>
+                                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {selectedPre.numero_pv && (
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pedido de Venta (PV)</span>
+                                                <span className="text-gray-700 font-semibold">{selectedPre.numero_pv}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cliente</span>
+                                            <span className="text-gray-700 font-semibold truncate" title={selectedPre.cliente_nombre}>
+                                                {selectedPre.cliente_nombre || '-'}
+                                                <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px]">{selectedPre.cliente_codigo || '-'}</span>
+                                            </span>
                                         </div>
-                                        <div>
-                                            <span className="font-semibold text-green-700">Cliente:</span>
-                                            <span className="ml-1">{selectedPre.cliente_nombre || '-'} ({selectedPre.cliente_codigo || '-'})</span>
-                                        </div>
-                                        <div>
-                                            <span className="font-semibold text-green-700">Pre-Remito:</span>
-                                            <span className="ml-1">{selectedPre.order_number}</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">ID Interno / Pre-Remito</span>
+                                            <span className="text-gray-700 font-bold font-mono tracking-tight">{selectedPre.order_number}</span>
                                         </div>
                                     </div>
                                 );
