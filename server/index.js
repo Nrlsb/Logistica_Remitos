@@ -709,7 +709,7 @@ app.post('/api/auth/register', async (req, res) => {
         const token = jwt.sign(
             { id: data[0].id, username: data[0].username, role: data[0].role, session_id: sessionId },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '12h' }
         );
 
         // Log activity
@@ -773,7 +773,7 @@ app.post('/api/auth/login', async (req, res) => {
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role, session_id: sessionId },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '12h' }
         );
 
         // Log activity
