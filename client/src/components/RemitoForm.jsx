@@ -200,7 +200,7 @@ const RemitoForm = () => {
                 const expectedQty = getExpectedQty(code);
                 if (expectedItems && expectedQty !== null) {
                     if (qty > expectedQty) {
-                        validationMessage = 'Excede cantidad solicitada';
+                        validationMessage = `Excede cantidad solicitada por ${qty - expectedQty}`;
                     }
                 }
                 return { ...item, quantity: qty, validationError: validationMessage };
@@ -416,7 +416,7 @@ const RemitoForm = () => {
             const newTotal = (existingItem ? existingItem.quantity : 0) + quantityToAdd;
 
             if (expectedQuantity !== null && newTotal > expectedQuantity) {
-                validationMessage = 'Excede cantidad solicitada';
+                validationMessage = `Excede cantidad solicitada por ${newTotal - expectedQuantity}`;
                 // We show a toast/notification? Standard logic adds it with red border.
             }
 
@@ -953,7 +953,7 @@ const RemitoForm = () => {
                                                 </div>
                                                 <p className="text-sm text-brand-gray font-mono tracking-wide">{item.code}</p>
                                                 {isUnexpected && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ No solicitado</p>}
-                                                {isOverQty && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ Excede cantidad</p>}
+                                                {isOverQty && <p className="text-xs text-brand-alert font-bold mt-1">⚠️ Excede cantidad por {item.quantity - expectedQty}</p>}
                                             </div>
 
                                             <div className="flex items-center justify-between w-full sm:w-auto gap-6">
