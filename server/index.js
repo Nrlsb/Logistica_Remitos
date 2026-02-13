@@ -234,6 +234,67 @@ app.patch('/api/remitos/:id', verifyToken, async (req, res) => {
     }
 });
 
+// Add client-detected discrepancy
+app.patch('/api/remitos/:id/client-discrepancy', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { product_code, product_description, quantity, type } = req.body;
+
+    if (!product_code || !quantity || !type) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    try {
+        // 1. Get current remito
+        const { data: remito, error: fetchError } = await supabase
+            .from('remitos')
+            .select('discrepancies, remito_number')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !remito) {
+            return res.status(404).json({ message: 'Remito not found' });
+        }
+
+        const discrepancies = remito.discrepancies || {};
+        const client_reported = Array.isArray(discrepancies.client_reported) ? [...discrepancies.client_reported] : [];
+
+        // 2. Add new discrepancy
+        const newDiscrepancy = {
+            code: product_code,
+            description: product_description,
+            quantity: Number(quantity),
+            type: type, // 'missing' or 'broken'
+            reported_at: new Date().toISOString(),
+            reported_by: req.user.username
+        };
+
+        client_reported.push(newDiscrepancy);
+        discrepancies.client_reported = client_reported;
+
+        // 3. Update DB
+        const { data, error: updateError } = await supabase
+            .from('remitos')
+            .update({ discrepancies })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // Log activity
+        await logActivity(req.user.username, 'report_client_discrepancy', 'remitos', id, {
+            remito_number: remito.remito_number,
+            product_code,
+            type
+        });
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error reporting client discrepancy:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Get all remitos with manual join to pre-remitos/PV
 app.get('/api/remitos', verifyToken, async (req, res) => {
     try {

@@ -84,8 +84,8 @@ const RemitoDetail = () => {
                         <div className="flex flex-col items-end">
                             <span className="text-sm font-bold text-gray-500">{new Date(remito.date).toLocaleDateString()}</span>
                             <span className={`mt-2 px-3 py-1 text-xs font-black uppercase rounded-full border ${remito.status === 'finalized' ? 'bg-green-100 text-green-700 border-green-200' :
-                                    remito.status === 'packed' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                        'bg-gray-100 text-gray-600 border-gray-200'
+                                remito.status === 'packed' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                    'bg-gray-100 text-gray-600 border-gray-200'
                                 }`}>
                                 {remito.status === 'finalized' ? 'Finalizado' : remito.status === 'packed' ? 'Achicado' : 'Escaneado'}
                             </span>
@@ -146,7 +146,7 @@ const RemitoDetail = () => {
 
                     {mainTab === 'discrepancies' && (
                         <div>
-                            {(remito.discrepancies && (remito.discrepancies.missing?.length > 0 || remito.discrepancies.extra?.length > 0)) ? (
+                            {(remito.discrepancies && (remito.discrepancies.missing?.length > 0 || remito.discrepancies.extra?.length > 0 || remito.discrepancies.client_reported?.length > 0)) ? (
                                 <div className="space-y-8">
                                     {remito.clarification && (
                                         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
@@ -213,6 +213,42 @@ const RemitoDetail = () => {
                                                         </div>
                                                         <div className="flex flex-col items-center justify-center bg-white px-4 py-2 rounded-lg border border-orange-100 shadow-sm shrink-0">
                                                             <span className="text-lg font-black text-orange-600">+{item.quantity}</span>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {remito.discrepancies.client_reported?.length > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-black text-brand-blue uppercase tracking-widest mb-4 flex items-center">
+                                                <span className="w-8 h-px bg-brand-blue/20 mr-3"></span>
+                                                Reportado por Cliente ({remito.discrepancies.client_reported.length})
+                                                <span className="flex-1 h-px bg-brand-blue/20 ml-3"></span>
+                                            </h4>
+                                            <ul className="space-y-4">
+                                                {remito.discrepancies.client_reported.map((item, idx) => (
+                                                    <li key={idx} className={`flex items-center ${item.type === 'broken' ? 'bg-yellow-50/50 border-yellow-100' : 'bg-red-50/50 border-red-100'} p-4 rounded-xl border shadow-sm`}>
+                                                        <div className={`mt-1 mr-4 ${item.type === 'broken' ? 'text-yellow-500' : 'text-red-500'} bg-white p-2 rounded-lg shadow-sm`}>
+                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.type === 'broken' ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" : "M20 12H4"}></path>
+                                                            </svg>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 mr-4">
+                                                            <span className="text-gray-900 font-bold text-base block mb-1">{item.description || item.code}</span>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-xs text-gray-400 font-mono">{item.code}</span>
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${item.type === 'broken' ? 'bg-yellow-200 text-yellow-800' : 'bg-red-200 text-red-800'}`}>
+                                                                    {item.type === 'missing' ? 'Faltante' : 'Rotura'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`flex flex-col items-center justify-center bg-white px-4 py-2 rounded-lg border ${item.type === 'broken' ? 'border-yellow-100' : 'border-red-100'} shadow-sm shrink-0`}>
+                                                            <span className={`text-lg font-black ${item.type === 'broken' ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                                {item.quantity}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Cant.</span>
                                                         </div>
                                                     </li>
                                                 ))}

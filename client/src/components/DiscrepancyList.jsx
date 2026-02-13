@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import ClientDiscrepancyModal from './ClientDiscrepancyModal';
 
 const DiscrepancyList = () => {
     const [remitos, setRemitos] = useState([]);
@@ -11,7 +12,15 @@ const DiscrepancyList = () => {
     }, []);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all'); // 'all', 'missing', 'extra'
+    const [filterType, setFilterType] = useState('all'); // 'all', 'missing', 'extra', 'broken'
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedRemito, setSelectedRemito] = useState(null);
+
+    const handleOpenModal = (remito) => {
+        setSelectedRemito(remito);
+        setIsModalOpen(true);
+    };
 
     const fetchRemitos = async () => {
         try {
@@ -32,9 +41,10 @@ const DiscrepancyList = () => {
     };
 
     const getCombinedDiscrepancies = (remito) => {
-        const missing = (remito.discrepancies?.missing || []).map(item => ({ ...item, type: 'missing' }));
-        const extra = (remito.discrepancies?.extra || []).map(item => ({ ...item, type: 'extra' }));
-        return [...missing, ...extra];
+        const missing = (remito.discrepancies?.missing || []).map(item => ({ ...item, type: 'missing', source: 'system' }));
+        const extra = (remito.discrepancies?.extra || []).map(item => ({ ...item, type: 'extra', source: 'system' }));
+        const client_reported = (remito.discrepancies?.client_reported || []).map(item => ({ ...item, source: 'client' }));
+        return [...missing, ...extra, ...client_reported];
     };
 
     const filteredRemitos = remitos.reduce((acc, remito) => {
@@ -101,6 +111,7 @@ const DiscrepancyList = () => {
                             <option value="all">Todos los registros</option>
                             <option value="missing">Solo Faltantes</option>
                             <option value="extra">Solo Sobrantes</option>
+                            <option value="broken">Solo Roturas</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,23 +165,44 @@ const DiscrepancyList = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    <button
+                                        onClick={() => handleOpenModal(remito)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white font-bold text-sm rounded-xl shadow-sm hover:bg-brand-dark transition-colors active:scale-95"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Reportar Discrepancia
+                                    </button>
                                 </div>
 
                                 {/* Items Container */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {items.map((item, idx) => {
                                         const isMissing = item.type === 'missing';
-                                        const accentColor = isMissing ? 'red' : 'orange';
+                                        const isExtra = item.type === 'extra';
+                                        const isBroken = item.type === 'broken';
+
+                                        const accentColor = isMissing ? 'red' : isBroken ? 'yellow' : 'orange';
+                                        const label = isMissing ? 'Faltante' : isBroken ? 'Rotura' : 'Sobrante';
+
                                         const difference = isMissing
-                                            ? (item.scanned - item.expected)
+                                            ? (item.source === 'system' ? (item.scanned - item.expected) : -item.quantity)
                                             : item.quantity;
 
+                                        const isClientReported = item.source === 'client';
+
                                         return (
-                                            <div key={idx} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-${accentColor}-900/5 transition-all duration-300 flex flex-col h-full`}>
+                                            <div key={idx} className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-${accentColor}-900/5 transition-all duration-300 flex flex-col h-full ${isClientReported ? 'ring-2 ring-brand-blue/10 ring-offset-2' : ''}`}>
                                                 <div className="flex justify-between items-start mb-4">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-${accentColor}-100 bg-${accentColor}-50 text-${accentColor}-600`}>
-                                                        {isMissing ? 'Faltante' : 'Sobrante'}
-                                                    </span>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <span className={`${isClientReported ? 'text-brand-blue bg-brand-blue/5' : `text-${accentColor}-600 bg-${accentColor}-50`} text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded border ${isClientReported ? 'border-brand-blue/10' : `border-${accentColor}-100`} w-fit`}>
+                                                            {isClientReported ? 'Cliente' : 'Sistema'}
+                                                        </span>
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-${accentColor}-100 bg-${accentColor}-50 text-${accentColor}-600 w-fit`}>
+                                                            {label}
+                                                        </span>
+                                                    </div>
                                                     <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-${accentColor}-600 text-white shadow-lg shadow-${accentColor}-600/20`}>
                                                         <span className="text-lg font-black leading-none">{difference > 0 ? `+${difference}` : difference}</span>
                                                     </div>
@@ -189,12 +221,12 @@ const DiscrepancyList = () => {
                                                     <div className="flex gap-4">
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">Esperado</span>
-                                                            <span className="font-bold text-sm text-gray-600 font-mono">{isMissing ? item.expected : '-'}</span>
+                                                            <span className="font-bold text-sm text-gray-600 font-mono">{isMissing && item.source === 'system' ? item.expected : '-'}</span>
                                                         </div>
                                                         <div className="w-px h-6 bg-gray-100 self-end mb-1"></div>
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">Actual</span>
-                                                            <span className={`font-black text-sm font-mono ${isMissing ? 'text-red-600' : 'text-orange-600'}`}>{isMissing ? item.scanned : item.quantity}</span>
+                                                            <span className={`font-black text-sm font-mono ${isMissing ? 'text-red-600' : isBroken ? 'text-yellow-600' : 'text-orange-600'}`}>{isMissing && item.source === 'system' ? item.scanned : item.quantity}</span>
                                                         </div>
                                                     </div>
 
@@ -215,6 +247,15 @@ const DiscrepancyList = () => {
                         );
                     })}
                 </div>
+            )}
+
+            {selectedRemito && (
+                <ClientDiscrepancyModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    remito={selectedRemito}
+                    onSuccess={fetchRemitos}
+                />
             )}
         </div>
     );
