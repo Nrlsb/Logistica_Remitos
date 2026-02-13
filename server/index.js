@@ -794,6 +794,55 @@ app.get('/api/users', verifyToken, async (req, res) => {
     }
 });
 
+// Update user generic (Admin only)
+app.patch('/api/users/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { tasks, password } = req.body;
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    const updates = {};
+    if (tasks !== undefined) {
+        if (!Array.isArray(tasks)) {
+            return res.status(400).json({ message: 'Tasks must be an array' });
+        }
+        updates.tasks = tasks;
+    }
+
+    if (password) {
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        updates.password = await bcrypt.hash(password, salt);
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(304).end(); // No changes
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update(updates)
+            .eq('id', id)
+            .select('id, username, role, tasks');
+
+        if (error) throw error;
+
+        // Log activity
+        await logActivity(req.user.username, 'update_user', 'user', id, {
+            updated_fields: Object.keys(updates)
+        });
+
+        res.json(data[0]);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Update user tasks (Admin only)
 app.patch('/api/users/:id/tasks', verifyToken, async (req, res) => {
     const { id } = req.params;

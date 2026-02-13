@@ -10,6 +10,7 @@ const ManageUsers = () => {
     const [loading, setLoading] = useState(true);
     const [editingUser, setEditingUser] = useState(null);
     const [selectedTasks, setSelectedTasks] = useState([]);
+    const [newPassword, setNewPassword] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('list'); // 'list' or 'create'
 
@@ -46,6 +47,7 @@ const ManageUsers = () => {
     const handleEditClick = (user) => {
         setEditingUser(user);
         setSelectedTasks(user.tasks || []);
+        setNewPassword(''); // Reset password field
         setIsModalOpen(true);
     };
 
@@ -59,13 +61,21 @@ const ManageUsers = () => {
 
     const handleSave = async () => {
         try {
-            // Use api instance for PATCH request
-            await api.patch(`/api/users/${editingUser.id}/tasks`, {
+            const updateData = {
                 tasks: selectedTasks
-            });
+            };
 
-            toast.success('Tareas actualizadas correctamente');
+            // Only send password if it's not empty
+            if (newPassword.trim()) {
+                updateData.password = newPassword;
+            }
+
+            // Use generic update endpoint
+            await api.patch(`/api/users/${editingUser.id}`, updateData);
+
+            toast.success('Usuario actualizado correctamente');
             setIsModalOpen(false);
+            setNewPassword('');
             fetchUsers();
         } catch (error) {
             console.error('Error:', error);
@@ -266,6 +276,19 @@ const ManageUsers = () => {
                                     <span className="text-gray-700">{task}</span>
                                 </label>
                             ))}
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Cambiar Contraseña (dejar en blanco para no cambiar)
+                            </label>
+                            <input
+                                type="text"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Nueva contraseña"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
                         </div>
 
                         <div className="flex justify-end space-x-3">
